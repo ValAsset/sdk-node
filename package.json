@@ -1,13 +1,21 @@
 {
-  "name": "@leaguetavern/valoasset",
+  "name": "@valasset/sdk",
   "version": "0.1.0",
-  "description": "Typed Node.js client for the ValoAsset VALORANT asset API",
+  "description": "Typed Node.js client for the ValAsset VALORANT asset API",
   "keywords": [
     "valorant",
-    "valoasset",
+    "valasset",
     "api-client"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ValAsset/sdk-node.git"
+  },
+  "homepage": "https://github.com/ValAsset/sdk-node#readme",
+  "bugs": {
+    "url": "https://github.com/ValAsset/sdk-node/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"

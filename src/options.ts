@@ -1,7 +1,7 @@
 import type { Locale } from "./locales.js";
 
-/** Options for constructing a {@link ValoAssetClient}. All fields are optional. */
-export interface ValoAssetClientOptions {
+/** Options for constructing a {@link ValAssetClient}. All fields are optional. */
+export interface ValAssetClientOptions {
   /**
    * API origin. Defaults to `https://val-api.buguoguo.cn`. Passed to the HTTP layer verbatim —
    * not validated, normalized or trimmed; forks are responsible for their own value.

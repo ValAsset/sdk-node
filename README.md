@@ -1,6 +1,6 @@
-# @leaguetavern/valoasset
+# @valasset/sdk
 
-Typed Node.js client for the [ValoAsset](https://github.com/LeagueTavern) VALORANT asset API.
+Typed Node.js client for the [ValAsset](https://github.com/ValAsset/ValAsset) VALORANT asset API.
 
 The API contract is the server's OpenAPI document: `https://val-api.buguoguo.cn/openapi/v1.json`.
 All DTO types in this package are generated from a committed snapshot of that document.
@@ -14,16 +14,16 @@ All DTO types in this package are generated from a committed snapshot of that do
 ## Install
 
 ```bash
-pnpm add @leaguetavern/valoasset
+pnpm add @valasset/sdk
 # or: npm install / yarn add
 ```
 
 ## Usage
 
 ```ts
-import { ValoAssetClient } from "@leaguetavern/valoasset";
+import { ValAssetClient } from "@valasset/sdk";
 
-const client = new ValoAssetClient();
+const client = new ValAssetClient();
 
 // Collections: list() and get(uuid)
 const agents = await client.agents.list();
@@ -45,7 +45,7 @@ unwrapped internally and never exposed.
 ### Options
 
 ```ts
-const client = new ValoAssetClient({
+const client = new ValAssetClient({
   baseURL: "http://localhost:5103", // default: https://val-api.buguoguo.cn (passed to HTTP layer verbatim)
   language: "zh-CN", // default locale for localized endpoints, default: "en-US"
   timeout: 5000, // ms; default 0 = no client-side timeout
@@ -58,7 +58,7 @@ const client = new ValoAssetClient({
 Localized endpoints accept a per-request `language` that wins over the client default:
 
 ```ts
-import { locales, type Locale } from "@leaguetavern/valoasset";
+import { locales, type Locale } from "@valasset/sdk";
 
 const maps = await client.maps.list({ language: "ja-JP" });
 console.log(locales); // the 18 supported locales
@@ -79,15 +79,15 @@ controller.abort(); // pending rejects with code "request_aborted"
 
 ### Errors
 
-Every failure rejects with `ValoAssetError`; `code` is the stable discriminator:
+Every failure rejects with `ValAssetError`; `code` is the stable discriminator:
 
 ```ts
-import { isValoAssetError } from "@leaguetavern/valoasset";
+import { isValAssetError } from "@valasset/sdk";
 
 try {
   await client.agents.get("unknown-uuid");
 } catch (error) {
-  if (isValoAssetError(error)) {
+  if (isValAssetError(error)) {
     error.code; // "uuid_not_found" — server codes pass through unchanged
     error.status; // 404 — present whenever an HTTP response was received
     error.detail; // server diagnostic text (wording not contractual)
@@ -98,7 +98,7 @@ try {
 
 Server codes: `resource_not_found`, `uuid_not_found`, `language_not_found`, `validation_failed`,
 `method_not_allowed`, `internal_error`. SDK codes: `network_error`, `request_timeout`,
-`request_aborted`, `invalid_response`, `http_error` (an HTTP response that is not a ValoAsset
+`request_aborted`, `invalid_response`, `http_error` (an HTTP response that is not a ValAsset
 error body, e.g. a proxy or CDN page).
 
 ### Locres

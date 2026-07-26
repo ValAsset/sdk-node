@@ -3158,7 +3158,7 @@
     }
   },
   "info": {
-    "title": "ValoAsset API",
+    "title": "ValAsset API",
     "version": "v1"
   },
   "openapi": "3.1.1",

@@ -1,5 +1,5 @@
 /**
- * The closed set of locales the ValoAsset API accepts, in canonical casing.
+ * The closed set of locales the ValAsset API accepts, in canonical casing.
  * Mirrors the server's `Locale` value type and the `language` enum in the OpenAPI contract.
  */
 export const locales = [

@@ -29,7 +29,7 @@ import type {
   WeaponSkinChroma,
   WeaponSkinLevel,
 } from "./generated/aliases.js";
-import type { ValoAssetClientOptions } from "./options.js";
+import type { ValAssetClientOptions } from "./options.js";
 import {
   collection,
   localizedSingleton,
@@ -63,18 +63,18 @@ interface WeaponsService extends CollectionService<Weapon> {
 }
 
 /**
- * Typed client for the ValoAsset API.
+ * Typed client for the ValAsset API.
  *
  * ```ts
- * const client = new ValoAssetClient();
+ * const client = new ValAssetClient();
  * const agents = await client.agents.list({ language: "zh-CN" });
  * ```
  *
  * Every service reference is created once in the constructor and is stable and read-only.
  * All methods resolve with the business data directly (the `{ status, data }` envelope is
- * unwrapped internally) and reject with {@link ValoAssetError}.
+ * unwrapped internally) and reject with {@link ValAssetError}.
  */
-export class ValoAssetClient {
+export class ValAssetClient {
   readonly agents: CollectionService<Agent>;
   readonly buddies: BuddiesService;
   readonly bundles: CollectionService<Bundle>;
@@ -98,7 +98,7 @@ export class ValoAssetClient {
   readonly version: SingletonService<ClientVersion>;
   readonly weapons: WeaponsService;
 
-  constructor(options: ValoAssetClientOptions = {}) {
+  constructor(options: ValAssetClientOptions = {}) {
     const transport = new Transport(options);
 
     this.agents = collection<Agent>(transport, "/v1/agents");

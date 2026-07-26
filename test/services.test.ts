@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { ValoAssetClient } from "../src/index.js";
+import { ValAssetClient } from "../src/index.js";
 import { envelope, startStubServer, type StubServer } from "./helpers/stub-server.js";
 
 describe("service hierarchy", () => {
   let server: StubServer;
-  let client: ValoAssetClient;
+  let client: ValAssetClient;
 
   beforeAll(async () => {
     server = await startStubServer();
-    client = new ValoAssetClient({ baseURL: server.baseURL });
+    client = new ValAssetClient({ baseURL: server.baseURL });
   });
   afterAll(() => server.close());
   beforeEach(() => {
@@ -20,7 +20,7 @@ describe("service hierarchy", () => {
 
   // Every service method with its exact slash-leading /v1 path. Localized endpoints carry the
   // default language; version is the only endpoint with no query at all.
-  const collectionCases: Array<[string, (c: ValoAssetClient) => Promise<unknown>, string]> = [
+  const collectionCases: Array<[string, (c: ValAssetClient) => Promise<unknown>, string]> = [
     ["agents", (c) => c.agents.list(), "/v1/agents"],
     ["buddies", (c) => c.buddies.list(), "/v1/buddies"],
     ["buddies.levels", (c) => c.buddies.levels.list(), "/v1/buddies/levels"],
@@ -83,7 +83,7 @@ describe("service hierarchy", () => {
   });
 
   it("language priority: per-request beats client default beats en-US", async () => {
-    const zhClient = new ValoAssetClient({ baseURL: server.baseURL, language: "zh-CN" });
+    const zhClient = new ValAssetClient({ baseURL: server.baseURL, language: "zh-CN" });
     await zhClient.agents.list();
     expect(lastUrl()).toBe("/v1/agents?language=zh-CN");
     await zhClient.agents.list({ language: "ko-KR" });
@@ -106,7 +106,7 @@ describe("service hierarchy", () => {
   });
 
   it("global headers can add and override", async () => {
-    const custom = new ValoAssetClient({
+    const custom = new ValAssetClient({
       baseURL: server.baseURL,
       headers: { Accept: "application/vnd.custom+json", "X-Custom": "1" },
     });
@@ -123,7 +123,7 @@ describe("service hierarchy", () => {
   });
 });
 
-function pathToService(client: ValoAssetClient, path: string) {
+function pathToService(client: ValAssetClient, path: string) {
   const byPath: Record<string, { get(uuid: string): Promise<unknown> }> = {
     "/v1/agents": client.agents,
     "/v1/buddies": client.buddies,

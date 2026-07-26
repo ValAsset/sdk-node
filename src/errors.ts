@@ -5,10 +5,10 @@
  * code (`uuid_not_found`, `language_not_found`, `validation_failed`, `resource_not_found`,
  * `method_not_allowed`, `internal_error`); failures the SDK detects itself use `network_error`,
  * `request_timeout`, `request_aborted`, `invalid_response` or `http_error` (an HTTP response that
- * is not a valid ValoAsset error body, e.g. from a proxy or CDN).
+ * is not a valid ValAsset error body, e.g. from a proxy or CDN).
  */
-export class ValoAssetError extends Error {
-  override readonly name = "ValoAssetError";
+export class ValAssetError extends Error {
+  override readonly name = "ValAssetError";
 
   /** Stable error code; the only field whose exact values are contract. */
   readonly code: string;
@@ -50,7 +50,7 @@ export class ValoAssetError extends Error {
   }
 }
 
-/** Type guard for {@link ValoAssetError}. */
-export function isValoAssetError(value: unknown): value is ValoAssetError {
-  return value instanceof ValoAssetError;
+/** Type guard for {@link ValAssetError}. */
+export function isValAssetError(value: unknown): value is ValAssetError {
+  return value instanceof ValAssetError;
 }

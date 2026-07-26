@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { isValoAssetError, ValoAssetClient } from "../src/index.js";
+import { isValAssetError, ValAssetClient } from "../src/index.js";
 import { envelope, json, startStubServer, type StubServer } from "./helpers/stub-server.js";
 
 async function expectError(promise: Promise<unknown>, code: string) {
   try {
     await promise;
   } catch (error) {
-    expect(isValoAssetError(error)).toBe(true);
-    if (isValoAssetError(error)) {
+    expect(isValAssetError(error)).toBe(true);
+    if (isValAssetError(error)) {
       expect(error.code).toBe(code);
       return error;
     }
@@ -18,11 +18,11 @@ async function expectError(promise: Promise<unknown>, code: string) {
 
 describe("envelope guard", () => {
   let server: StubServer;
-  let client: ValoAssetClient;
+  let client: ValAssetClient;
 
   beforeAll(async () => {
     server = await startStubServer();
-    client = new ValoAssetClient({ baseURL: server.baseURL });
+    client = new ValAssetClient({ baseURL: server.baseURL });
   });
   afterAll(() => server.close());
   beforeEach(() => server.setHandler(envelope({})));

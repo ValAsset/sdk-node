@@ -1,13 +1,13 @@
-// End-to-end smoke against a real, running ValoAsset Server using the built SDK (dist/).
+// End-to-end smoke against a real, running ValAsset Server using the built SDK (dist/).
 // Not part of the test suite: requires `pnpm build` first and a server with real data.
 //
 // Usage: node scripts/smoke-live.mjs [--base http://localhost:5103]
 import { parseArgs } from "node:util";
-import { isValoAssetError, ValoAssetClient } from "../dist/index.js";
+import { isValAssetError, ValAssetClient } from "../dist/index.js";
 
 const { values } = parseArgs({ options: { base: { type: "string" } } });
 const baseURL = values.base ?? "http://localhost:5103";
-const client = new ValoAssetClient({ baseURL });
+const client = new ValAssetClient({ baseURL });
 
 let failures = 0;
 function check(name, condition, extra = "") {
@@ -46,8 +46,8 @@ try {
   // A deployment without extracted locres data legitimately 404s.
   check(
     "locres.get missing data maps to language_not_found",
-    isValoAssetError(error) && error.code === "language_not_found",
-    isValoAssetError(error) ? error.code : String(error),
+    isValAssetError(error) && error.code === "language_not_found",
+    isValAssetError(error) ? error.code : String(error),
   );
 }
 
@@ -57,7 +57,7 @@ try {
 } catch (error) {
   check(
     "unknown uuid maps to uuid_not_found with status 404",
-    isValoAssetError(error) && error.code === "uuid_not_found" && error.status === 404,
+    isValAssetError(error) && error.code === "uuid_not_found" && error.status === 404,
   );
 }
 
@@ -68,7 +68,7 @@ try {
 } catch (error) {
   check(
     "invalid locale maps to validation_failed with status 400",
-    isValoAssetError(error) && error.code === "validation_failed" && error.status === 400,
+    isValAssetError(error) && error.code === "validation_failed" && error.status === 400,
   );
 }
 

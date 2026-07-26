@@ -1,30 +1,30 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { ValoAssetError } from "../src/index.js";
-import { isValoAssetError, ValoAssetClient } from "../src/index.js";
+import type { ValAssetError } from "../src/index.js";
+import { isValAssetError, ValAssetClient } from "../src/index.js";
 import { envelope, json, startStubServer, type StubServer } from "./helpers/stub-server.js";
 
-async function expectValoAssetError(promise: Promise<unknown>): Promise<ValoAssetError> {
+async function expectValAssetError(promise: Promise<unknown>): Promise<ValAssetError> {
   try {
     await promise;
   } catch (error) {
-    expect(isValoAssetError(error)).toBe(true);
-    return error as ValoAssetError;
+    expect(isValAssetError(error)).toBe(true);
+    return error as ValAssetError;
   }
   throw new Error("Expected the promise to reject");
 }
 
 describe("error mapping", () => {
   let server: StubServer;
-  let client: ValoAssetClient;
+  let client: ValAssetClient;
 
   beforeAll(async () => {
     server = await startStubServer();
-    client = new ValoAssetClient({ baseURL: server.baseURL });
+    client = new ValAssetClient({ baseURL: server.baseURL });
   });
   afterAll(() => server.close());
   beforeEach(() => server.setHandler(envelope({})));
 
-  it("maps a server ApiError onto ValoAssetError fields", async () => {
+  it("maps a server ApiError onto ValAssetError fields", async () => {
     server.setHandler(
       json(404, {
         status: 404,
@@ -35,8 +35,8 @@ describe("error mapping", () => {
       }),
     );
 
-    const error = await expectValoAssetError(client.agents.get("x"));
-    expect(error.name).toBe("ValoAssetError");
+    const error = await expectValAssetError(client.agents.get("x"));
+    expect(error.name).toBe("ValAssetError");
     expect(error.code).toBe("uuid_not_found");
     expect(error.message).toBe("UUID Not Found");
     expect(error.status).toBe(404);
@@ -51,7 +51,7 @@ describe("error mapping", () => {
       server.setHandler(
         json(status, { status, code, title: "T", detail: "D", instance: "/v1/agents" }),
       );
-      const error = await expectValoAssetError(client.agents.list());
+      const error = await expectValAssetError(client.agents.list());
       expect(error.code).toBe(code);
       expect(error.status).toBe(status);
     }
@@ -62,23 +62,23 @@ describe("error mapping", () => {
       res.writeHead(502, { "content-type": "text/html" });
       res.end("<html>Bad Gateway</html>");
     });
-    const error = await expectValoAssetError(client.agents.list());
+    const error = await expectValAssetError(client.agents.list());
     expect(error.code).toBe("http_error");
     expect(error.status).toBe(502);
   });
 
   it("requires all five ApiError fields before trusting the body", async () => {
-    // "instance" missing → not a ValoAsset error body, even though it looks close.
+    // "instance" missing → not a ValAsset error body, even though it looks close.
     server.setHandler(json(404, { status: 404, code: "uuid_not_found", title: "T", detail: "D" }));
-    const error = await expectValoAssetError(client.agents.get("x"));
+    const error = await expectValAssetError(client.agents.get("x"));
     expect(error.code).toBe("http_error");
   });
 
   it("maps connection failures to network_error", async () => {
     const closed = await startStubServer();
     await closed.close();
-    const offline = new ValoAssetClient({ baseURL: closed.baseURL });
-    const error = await expectValoAssetError(offline.agents.list());
+    const offline = new ValAssetClient({ baseURL: closed.baseURL });
+    const error = await expectValAssetError(offline.agents.list());
     expect(error.code).toBe("network_error");
     expect(error.status).toBeUndefined();
   });
@@ -90,8 +90,8 @@ describe("error mapping", () => {
         res.end(JSON.stringify({ status: 200, data: [] }));
       }, 2_000);
     });
-    const impatient = new ValoAssetClient({ baseURL: server.baseURL, timeout: 100 });
-    const error = await expectValoAssetError(impatient.agents.list());
+    const impatient = new ValAssetClient({ baseURL: server.baseURL, timeout: 100 });
+    const error = await expectValAssetError(impatient.agents.list());
     expect(error.code).toBe("request_timeout");
   });
 
@@ -103,15 +103,15 @@ describe("error mapping", () => {
       }, 2_000);
     });
     const controller = new AbortController();
-    const pending = expectValoAssetError(client.agents.list({ signal: controller.signal }));
+    const pending = expectValAssetError(client.agents.list({ signal: controller.signal }));
     setTimeout(() => controller.abort(), 50);
     const error = await pending;
     expect(error.code).toBe("request_aborted");
   });
 
-  it("isValoAssetError rejects non-SDK errors", () => {
-    expect(isValoAssetError(new Error("boom"))).toBe(false);
-    expect(isValoAssetError({ name: "ValoAssetError", code: "x" })).toBe(false);
-    expect(isValoAssetError(undefined)).toBe(false);
+  it("isValAssetError rejects non-SDK errors", () => {
+    expect(isValAssetError(new Error("boom"))).toBe(false);
+    expect(isValAssetError({ name: "ValAssetError", code: "x" })).toBe(false);
+    expect(isValAssetError(undefined)).toBe(false);
   });
 });

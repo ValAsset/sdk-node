@@ -8,7 +8,7 @@ import type {
   Weapon,
   WeaponSkin,
 } from "../src/index.js";
-import { ValoAssetClient } from "../src/index.js";
+import { ValAssetClient } from "../src/index.js";
 import { envelope, startStubServer, type StubServer } from "./helpers/stub-server.js";
 
 // These fixtures are compile-time proof that realistic server JSON satisfies the generated DTO
@@ -256,11 +256,11 @@ const weaponFixture: Weapon = {
 
 describe("DTO fixtures round-trip through the client untouched", () => {
   let server: StubServer;
-  let client: ValoAssetClient;
+  let client: ValAssetClient;
 
   beforeAll(async () => {
     server = await startStubServer();
-    client = new ValoAssetClient({ baseURL: server.baseURL });
+    client = new ValAssetClient({ baseURL: server.baseURL });
   });
   afterAll(() => server.close());
 

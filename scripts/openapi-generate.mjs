@@ -1,4 +1,4 @@
-// Regenerates src/generated/* from the committed openapi/valoasset-v1.json snapshot.
+// Regenerates src/generated/* from the committed openapi/valasset-v1.json snapshot.
 // Never touches the network; the snapshot is the only input.
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";

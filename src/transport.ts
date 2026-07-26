@@ -1,7 +1,7 @@
 import axios, { isAxiosError, type AxiosInstance } from "axios";
-import { ValoAssetError } from "./errors.js";
+import { ValAssetError } from "./errors.js";
 import { DEFAULT_LOCALE, type Locale } from "./locales.js";
-import type { LocalizedRequestOptions, RequestOptions, ValoAssetClientOptions } from "./options.js";
+import type { LocalizedRequestOptions, RequestOptions, ValAssetClientOptions } from "./options.js";
 
 export const DEFAULT_BASE_URL = "https://val-api.buguoguo.cn";
 
@@ -24,7 +24,7 @@ export class Transport {
   private readonly http: AxiosInstance;
   private readonly defaultLanguage: Locale;
 
-  constructor(options: ValoAssetClientOptions = {}) {
+  constructor(options: ValAssetClientOptions = {}) {
     this.http = axios.create({
       baseURL: options.baseURL ?? DEFAULT_BASE_URL,
       timeout: options.timeout ?? 0,
@@ -56,7 +56,7 @@ export class Transport {
       httpStatus = response.status;
       body = response.data;
     } catch (error) {
-      throw toValoAssetError(error);
+      throw toValAssetError(error);
     }
 
     if (!isRecord(body) || typeof body.status !== "number") {
@@ -76,14 +76,14 @@ export class Transport {
   }
 }
 
-function invalidResponse(message: string, status: number, cause: unknown): ValoAssetError {
-  return new ValoAssetError({ message, code: "invalid_response", status, cause });
+function invalidResponse(message: string, status: number, cause: unknown): ValAssetError {
+  return new ValAssetError({ message, code: "invalid_response", status, cause });
 }
 
-function toValoAssetError(error: unknown): ValoAssetError {
+function toValAssetError(error: unknown): ValAssetError {
   if (isAxiosError(error)) {
     if (error.code === "ERR_CANCELED") {
-      return new ValoAssetError({
+      return new ValAssetError({
         message: "Request aborted",
         code: "request_aborted",
         cause: error,
@@ -94,7 +94,7 @@ function toValoAssetError(error: unknown): ValoAssetError {
     if (response !== undefined) {
       const apiError = asWireApiError(response.data);
       if (apiError !== null) {
-        return new ValoAssetError({
+        return new ValAssetError({
           message: apiError.title,
           code: apiError.code,
           status: response.status,
@@ -103,9 +103,9 @@ function toValoAssetError(error: unknown): ValoAssetError {
           cause: error,
         });
       }
-      // An HTTP response that is not a ValoAsset error body — typically a proxy or CDN answering
+      // An HTTP response that is not a ValAsset error body — typically a proxy or CDN answering
       // in front of the application.
-      return new ValoAssetError({
+      return new ValAssetError({
         message: `HTTP ${response.status}`,
         code: "http_error",
         status: response.status,
@@ -114,17 +114,17 @@ function toValoAssetError(error: unknown): ValoAssetError {
     }
 
     if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
-      return new ValoAssetError({
+      return new ValAssetError({
         message: "Request timed out",
         code: "request_timeout",
         cause: error,
       });
     }
 
-    return new ValoAssetError({ message: "Network error", code: "network_error", cause: error });
+    return new ValAssetError({ message: "Network error", code: "network_error", cause: error });
   }
 
-  return new ValoAssetError({ message: "Network error", code: "network_error", cause: error });
+  return new ValAssetError({ message: "Network error", code: "network_error", cause: error });
 }
 
 function asWireApiError(body: unknown): WireApiError | null {

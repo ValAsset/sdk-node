@@ -9,7 +9,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
-const workDir = await mkdtemp(join(tmpdir(), "valoasset-tarball-smoke-"));
+const workDir = await mkdtemp(join(tmpdir(), "valasset-tarball-smoke-"));
 
 function run(command, cwd) {
   console.log(`\n> ${command}  (${cwd})`);
@@ -27,7 +27,7 @@ try {
 
   await writeFile(
     join(workDir, "package.json"),
-    JSON.stringify({ name: "valoasset-tarball-smoke", private: true, type: "module" }, null, 2),
+    JSON.stringify({ name: "valasset-tarball-smoke", private: true, type: "module" }, null, 2),
   );
   run(`npm install "${tarball}" typescript@5 @types/node@24 --no-audit --no-fund`, workDir);
 
@@ -36,11 +36,11 @@ try {
     `
 import { createServer } from "node:http";
 import assert from "node:assert/strict";
-import { ValoAssetClient, ValoAssetError, isValoAssetError, locales } from "@leaguetavern/valoasset";
+import { ValAssetClient, ValAssetError, isValAssetError, locales } from "@valasset/sdk";
 
 assert.equal(locales.length, 18);
-assert.equal(typeof ValoAssetClient, "function");
-assert.equal(typeof ValoAssetError, "function");
+assert.equal(typeof ValAssetClient, "function");
+assert.equal(typeof ValAssetError, "function");
 
 const server = createServer((req, res) => {
   res.setHeader("content-type", "application/json");
@@ -58,7 +58,7 @@ const server = createServer((req, res) => {
   res.end(JSON.stringify({ status: 200, data: [] }));
 });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
-const client = new ValoAssetClient({ baseURL: \`http://127.0.0.1:\${server.address().port}\` });
+const client = new ValAssetClient({ baseURL: \`http://127.0.0.1:\${server.address().port}\` });
 
 assert.deepEqual(await client.agents.list(), []);
 assert.equal((await client.version.get()).branch, "b");
@@ -66,7 +66,7 @@ try {
   await client.agents.get("missing");
   assert.fail("expected rejection");
 } catch (error) {
-  assert.ok(isValoAssetError(error));
+  assert.ok(isValAssetError(error));
   assert.equal(error.code, "uuid_not_found");
 }
 server.close();
@@ -78,11 +78,11 @@ console.log("runtime smoke OK");
   await writeFile(
     join(workDir, "smoke-types.ts"),
     `
-import type { Agent, ClientVersion, Locale, Locres, Weapon } from "@leaguetavern/valoasset";
-import { ValoAssetClient, isValoAssetError, locales } from "@leaguetavern/valoasset";
+import type { Agent, ClientVersion, Locale, Locres, Weapon } from "@valasset/sdk";
+import { ValAssetClient, isValAssetError, locales } from "@valasset/sdk";
 
 const language: Locale = "zh-CN";
-const client = new ValoAssetClient({ language, timeout: 1000 });
+const client = new ValAssetClient({ language, timeout: 1000 });
 
 async function usage(): Promise<void> {
   const agents: Agent[] = await client.agents.list({ language: "ja-JP" });
@@ -94,7 +94,7 @@ async function usage(): Promise<void> {
   try {
     await client.agents.get("x");
   } catch (error) {
-    if (isValoAssetError(error)) console.log(error.code, error.status);
+    if (isValAssetError(error)) console.log(error.code, error.status);
   }
 }
 void usage();

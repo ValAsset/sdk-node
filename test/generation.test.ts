@@ -11,7 +11,7 @@ import {
 
 describe("generated artifacts stay in sync with the committed snapshot", () => {
   it("the snapshot itself is in normalized form", async () => {
-    const raw = await readFile(new URL("../openapi/valoasset-v1.json", import.meta.url), "utf8");
+    const raw = await readFile(new URL("../openapi/valasset-v1.json", import.meta.url), "utf8");
     expect(raw).toBe(normalizeDocument(JSON.parse(raw)));
   });
 

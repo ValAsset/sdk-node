@@ -1,5 +1,5 @@
-// Downloads the OpenAPI document from a running ValoAsset Server, writes the normalized snapshot
-// to openapi/valoasset-v1.json, then regenerates src/generated/*.
+// Downloads the OpenAPI document from a running ValAsset Server, writes the normalized snapshot
+// to openapi/valasset-v1.json, then regenerates src/generated/*.
 //
 // Usage: pnpm openapi:update [--source <url>]
 //
