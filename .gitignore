@@ -4,3 +4,11 @@ coverage/
 *.tgz
 *.log
 .DS_Store
+
+# pnpm is the only package manager here (pnpm-lock.yaml IS committed — the generation-drift
+# and format checks depend on locked dev deps); stray lockfiles from other managers are noise.
+package-lock.json
+npm-shrinkwrap.json
+yarn.lock
+bun.lock
+bun.lockb
