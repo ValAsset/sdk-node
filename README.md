@@ -119,3 +119,69 @@ const { downloadUrl } = await client.locres.get({ language: "zh-CN" });
   timezone — do not interpret it as UTC.
 - **UUIDs are opaque strings**, inserted into request paths verbatim.
 - The SDK does **no** pagination, caching, request merging, retrying or default timeouts.
+
+## Updating the SDK (maintainers)
+
+Consumers never need this section. The SDK is snapshot-driven: `openapi/valasset-v1.json` is the
+committed contract and everything under `src/generated/` is derived from it. Only two files are
+handwritten against the contract shape (`src/client.ts` service hierarchy, `src/locales.ts`);
+transport, errors and the root exports never change with routine contract updates.
+
+### 1. Refresh the snapshot
+
+Run the ValAsset server locally (an empty database is fine — the OpenAPI document does not depend
+on data), then:
+
+```bash
+pnpm openapi:update                                             # defaults to http://localhost:5103/openapi/v1.json
+pnpm openapi:update --source http://127.0.0.1:5199/openapi/v1.json
+```
+
+This downloads the document, writes the normalized snapshot and regenerates
+`src/generated/openapi.ts` + `src/generated/aliases.ts`. New DTOs automatically get a public type
+alias and are re-exported from the package root — no wiring needed.
+
+### 2. Update the handwritten layer (only when the shape changed)
+
+| Contract change              | What to touch                                                          |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| Fields added/removed/retyped | Nothing — the generated layer covers it                                |
+| New resource route           | Service in `src/client.ts` + the path table in `test/services.test.ts` |
+| New locale                   | Add it to `src/locales.ts`                                             |
+| New server error code        | Nothing — server codes pass through unchanged                          |
+
+### 3. Verify
+
+```bash
+pnpm check
+```
+
+The suite fails loudly on anything missed: `test/generation.test.ts` byte-compares the committed
+generated files against a fresh regeneration, `test/locales.test.ts` compares `locales` with the
+snapshot's language enum, and the DTO fixtures in `test/dto-fixtures.test.ts` are fully typed so
+field changes surface as compile errors.
+
+Optional deeper verification:
+
+```bash
+node scripts/smoke-live.mjs --base http://localhost:5103   # real server round-trip (run pnpm build first)
+node scripts/smoke-tarball.mjs                             # consumer-perspective tarball install
+```
+
+### 4. Version and publish
+
+```bash
+npm version minor      # on 0.x, ^0.1.0 only matches 0.1.x, so a minor bump cannot surprise consumers
+npm publish            # prepublishOnly runs the full check chain, including a fresh build
+git push --follow-tags
+```
+
+### Drift check against production
+
+To see whether the deployed server still matches the committed contract, regenerate from it and
+inspect the diff (restore afterwards if you were only checking):
+
+```bash
+pnpm openapi:update --source https://val-api.buguoguo.cn/openapi/v1.json
+git diff
+```
