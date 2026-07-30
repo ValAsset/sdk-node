@@ -1,7 +1,7 @@
 // Packs the real npm tarball and verifies it from a consumer's perspective: installs it into a
-// throwaway Node 20 ESM project, imports it, runs it against a stub HTTP server, and compiles a
-// TypeScript consumer against the published .d.ts. Requires `pnpm build` first and network access
-// for `npm install typescript`.
+// throwaway Node 20 project, loads its ESM and CommonJS entry points, runs it against a stub HTTP
+// server, and compiles a TypeScript consumer against the published .d.ts. Requires `pnpm build`
+// first and network access for `npm install typescript`.
 import { execSync } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -30,6 +30,21 @@ try {
     JSON.stringify({ name: "valasset-tarball-smoke", private: true, type: "module" }, null, 2),
   );
   run(`npm install "${tarball}" typescript@5 @types/node@24 --no-audit --no-fund`, workDir);
+
+  await writeFile(
+    join(workDir, "smoke.cjs"),
+    `
+const assert = require("node:assert/strict");
+const { ValAssetClient, ValAssetError, isValAssetError, locales } = require("@valasset/sdk");
+
+assert.equal(locales.length, 18);
+assert.equal(typeof ValAssetClient, "function");
+assert.equal(typeof ValAssetError, "function");
+assert.equal(typeof isValAssetError, "function");
+console.log("CommonJS runtime smoke OK");
+`,
+  );
+  run("node smoke.cjs", workDir);
 
   await writeFile(
     join(workDir, "smoke.mjs"),
@@ -106,6 +121,16 @@ console.log(invalid);
 `,
   );
   await writeFile(
+    join(workDir, "smoke-types.cts"),
+    `
+import { ValAssetClient, type Locale } from "@valasset/sdk";
+
+const language: Locale = "zh-CN";
+const client = new ValAssetClient({ language });
+console.log(client);
+`,
+  );
+  await writeFile(
     join(workDir, "tsconfig.json"),
     JSON.stringify(
       {
@@ -118,7 +143,7 @@ console.log(invalid);
           skipLibCheck: false,
           types: ["node"],
         },
-        include: ["smoke-types.ts"],
+        include: ["smoke-types.ts", "smoke-types.cts"],
       },
       null,
       2,

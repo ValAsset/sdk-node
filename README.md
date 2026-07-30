@@ -8,8 +8,8 @@ All DTO types in this package are generated from a committed snapshot of that do
 ## Requirements
 
 - Node.js **20+**
-- ESM only (`"type": "module"` — there is no CommonJS build). Browsers are not a supported
-  target; the package may happen to work there, but only Node is tested.
+- ESM and CommonJS are supported. Browsers are not a supported target; the package may happen to
+  work there, but only Node is tested.
 
 ## Install
 
@@ -37,6 +37,14 @@ const competitive = await client.seasons.competitive.list();
 
 // Singletons: get()
 const version = await client.version.get();
+```
+
+CommonJS consumers can load the same API with `require`:
+
+```js
+const { ValAssetClient } = require("@valasset/sdk");
+
+const client = new ValAssetClient();
 ```
 
 Methods resolve directly with the business data — the server's `{ status, data }` envelope is
