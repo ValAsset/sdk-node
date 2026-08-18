@@ -1,5 +1,6 @@
 import type {
   Agent,
+  AgentVoicelines,
   Buddy,
   BuddyLevel,
   Bundle,
@@ -16,14 +17,17 @@ import type {
   GameModeEquippable,
   Gear,
   LevelBorder,
+  Liveness,
   Locres,
   Map,
   PlayerCard,
   PlayerTitle,
+  Readiness,
   Season,
   Spray,
   SprayLevel,
   Theme,
+  VoiceCoverage,
   Weapon,
   WeaponSkin,
   WeaponSkinChroma,
@@ -32,13 +36,38 @@ import type {
 import type { ValAssetClientOptions } from "./options.js";
 import {
   collection,
+  itemSubResource,
   localizedSingleton,
   singleton,
   type CollectionService,
+  type ItemSubResource,
   type LocalizedSingletonService,
   type SingletonService,
 } from "./services.js";
 import { Transport } from "./transport.js";
+
+interface AgentsService extends CollectionService<Agent> {
+  /**
+   * Voice lines of one Agent, in one audio language.
+   *
+   * The `language` option selects the *audio* language; display names come from the Voice
+   * Dataset's own catalog and do not follow it. Rejects with `language_not_found` when the
+   * deployed Dataset does not publish the requested locale, and resolves with empty maps when the
+   * Agent simply has no voice — that is a normal answer, not an error.
+   */
+  readonly voicelines: ItemSubResource<AgentVoicelines>;
+}
+
+/**
+ * Operational endpoints. `ready` answers 200 whether or not the deployed Asset and Voice artifacts
+ * describe the same game build — read `status` (`healthy` / `degraded`) to decide, never the HTTP
+ * code.
+ */
+interface HealthService {
+  readonly live: SingletonService<Liveness>;
+  readonly ready: SingletonService<Readiness>;
+  readonly voiceCoverage: SingletonService<VoiceCoverage>;
+}
 
 interface BuddiesService extends CollectionService<Buddy> {
   readonly levels: CollectionService<BuddyLevel>;
@@ -75,7 +104,7 @@ interface WeaponsService extends CollectionService<Weapon> {
  * unwrapped internally) and reject with {@link ValAssetError}.
  */
 export class ValAssetClient {
-  readonly agents: CollectionService<Agent>;
+  readonly agents: AgentsService;
   readonly buddies: BuddiesService;
   readonly bundles: CollectionService<Bundle>;
   readonly ceremonies: CollectionService<Ceremony>;
@@ -87,6 +116,7 @@ export class ValAssetClient {
   readonly flex: CollectionService<Flex>;
   readonly gameModes: GameModesService;
   readonly gear: CollectionService<Gear>;
+  readonly health: HealthService;
   readonly levelBorders: CollectionService<LevelBorder>;
   readonly locres: LocalizedSingletonService<Locres>;
   readonly maps: CollectionService<Map>;
@@ -101,7 +131,10 @@ export class ValAssetClient {
   constructor(options: ValAssetClientOptions = {}) {
     const transport = new Transport(options);
 
-    this.agents = collection<Agent>(transport, "/v1/agents");
+    this.agents = Object.freeze({
+      ...collection<Agent>(transport, "/v1/agents"),
+      voicelines: itemSubResource<AgentVoicelines>(transport, "/v1/agents", "voicelines"),
+    });
     this.buddies = Object.freeze({
       ...collection<Buddy>(transport, "/v1/buddies"),
       levels: collection<BuddyLevel>(transport, "/v1/buddies/levels"),
@@ -119,6 +152,11 @@ export class ValAssetClient {
       equippables: collection<GameModeEquippable>(transport, "/v1/gamemodes/equippables"),
     });
     this.gear = collection<Gear>(transport, "/v1/gear");
+    this.health = Object.freeze({
+      live: singleton<Liveness>(transport, "/health/live"),
+      ready: singleton<Readiness>(transport, "/health/ready"),
+      voiceCoverage: singleton<VoiceCoverage>(transport, "/health/voice-coverage"),
+    });
     this.levelBorders = collection<LevelBorder>(transport, "/v1/levelborders");
     this.locres = localizedSingleton<Locres>(transport, "/v1/locres");
     this.maps = collection<Map>(transport, "/v1/maps");

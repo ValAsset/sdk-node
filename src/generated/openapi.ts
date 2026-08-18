@@ -1,4 +1,52 @@
 export interface paths {
+    "/health/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getLiveness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/voice-coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getVoiceCoverage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/agents": {
         parameters: {
             query?: never;
@@ -23,6 +71,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getAgent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agents/{uuid}/voicelines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAgentVoicelines"];
         put?: never;
         post?: never;
         delete?: never;
@@ -950,6 +1014,10 @@ export interface components {
             displayName: null | string;
             uuid: null | string;
         };
+        /**
+         * @deprecated
+         * @description Deprecated: always null. Use GET /v1/agents/{uuid}/voicelines instead.
+         */
         AgentVoiceLine: {
             /** Format: float */
             maxDuration: null | number;
@@ -961,6 +1029,24 @@ export interface components {
             id: null | string;
             wave: null | string;
             wwise: null | string;
+        };
+        AgentVoicelines: {
+            categories: {
+                [key: string]: components["schemas"]["VoiceCategory"];
+            };
+            events: {
+                [key: string]: components["schemas"]["VoiceEvent"];
+            };
+            info: components["schemas"]["VoiceInfo"];
+            media: {
+                [key: string]: components["schemas"]["VoiceMedia"];
+            };
+            subtitles: {
+                [key: string]: components["schemas"]["VoiceSubtitle"];
+            };
+            voiceLines: {
+                [key: string]: components["schemas"]["VoiceLine"];
+            };
         };
         ApiError: {
             code: string;
@@ -1275,6 +1361,9 @@ export interface components {
             startingLevel: number;
             uuid: string;
         };
+        Liveness: {
+            status: string;
+        };
         Locres: {
             downloadUrl: string;
         };
@@ -1344,6 +1433,14 @@ export interface components {
             titleText: null | string;
             uuid: string;
         };
+        Readiness: {
+            assetVersion: null | string;
+            status: string;
+            /** Format: date-time */
+            voiceFinalizedAt: null | string;
+            voiceLanguages: string[];
+            voiceVersion: string;
+        };
         Season: {
             assetPath: string;
             displayName: null | string;
@@ -1387,6 +1484,61 @@ export interface components {
             displayName: null | string;
             displayNameAllCaps: null | string;
             uuid: string;
+        };
+        VoiceCategory: {
+            displayName: string;
+            /** Format: int32 */
+            sortOrder: number;
+        };
+        VoiceCoverage: {
+            agents: components["schemas"]["VoiceCoverageAgent"][];
+            /** Format: int32 */
+            playableAgentCount: number;
+            unmappedSubjectKeys: string[];
+            voiceVersion: string;
+            /** Format: int32 */
+            withVoiceSubjectCount: number;
+            /** Format: int32 */
+            withoutVoiceSubjectCount: number;
+        };
+        VoiceCoverageAgent: {
+            developerName: string;
+            hasVoiceSubject: boolean;
+            uuid: string;
+            /** Format: int32 */
+            voiceLineCount: number;
+        };
+        VoiceEvent: {
+            eventName: string;
+            name: null | string;
+            sourceIds: string[];
+        };
+        VoiceInfo: {
+            agentUuid: string;
+            developerName: string;
+            displayName: string;
+            /** Format: date-time */
+            finalizedAt: null | string;
+            language: string;
+            version: string;
+        };
+        VoiceLine: {
+            category: null | string;
+            eventIds: string[];
+            name: null | string;
+        };
+        VoiceMedia: {
+            contentHash: string;
+            /** Format: int64 */
+            contentLength: number;
+            url: null | string;
+        };
+        VoiceSubtitle: {
+            checked: boolean;
+            status: string;
+            text: string;
+            /** Format: date-time */
+            updatedAt: null | string;
         };
         Weapon: {
             assetPath: string;
@@ -1531,6 +1683,96 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getLiveness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Liveness"];
+                        /** @description Mirrors the HTTP status code. */
+                        status: number;
+                    };
+                };
+            };
+        };
+    };
+    getReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Readiness"];
+                        /** @description Mirrors the HTTP status code. */
+                        status: number;
+                    };
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    getVoiceCoverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["VoiceCoverage"];
+                        /** @description Mirrors the HTTP status code. */
+                        status: number;
+                    };
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     listAgents: {
         parameters: {
             query?: {
@@ -1616,6 +1858,71 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Agent"];
+                        /** @description Mirrors the HTTP status code. */
+                        status: number;
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Method Not Allowed */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    getAgentVoicelines: {
+        parameters: {
+            query?: {
+                /** @description Locale for localized fields. */
+                language?: "ar-AE" | "de-DE" | "en-US" | "es-ES" | "es-MX" | "fr-FR" | "id-ID" | "it-IT" | "ja-JP" | "ko-KR" | "pl-PL" | "pt-BR" | "ru-RU" | "th-TH" | "tr-TR" | "vi-VN" | "zh-CN" | "zh-TW";
+            };
+            header?: never;
+            path: {
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AgentVoicelines"];
                         /** @description Mirrors the HTTP status code. */
                         status: number;
                     };

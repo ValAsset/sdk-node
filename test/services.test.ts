@@ -76,6 +76,32 @@ describe("service hierarchy", () => {
     expect(lastUrl()).toBe("/v1/locres?language=ja-JP");
   });
 
+  it("agents.voicelines(uuid) addresses the sub-resource of the parent Agent", async () => {
+    server.setHandler(envelope({}));
+    await client.agents.voicelines("add6443a-41bd-e414-f6ad-e58d267f4e95");
+    expect(lastUrl()).toBe(
+      "/v1/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/voicelines?language=en-US",
+    );
+
+    // language selects the audio language here, and per-request still beats the client default.
+    await client.agents.voicelines("add6443a-41bd-e414-f6ad-e58d267f4e95", { language: "zh-CN" });
+    expect(lastUrl()).toBe(
+      "/v1/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/voicelines?language=zh-CN",
+    );
+  });
+
+  const healthCases: Array<[string, (c: ValAssetClient) => Promise<unknown>, string]> = [
+    ["health.live", (c) => c.health.live.get(), "/health/live"],
+    ["health.ready", (c) => c.health.ready.get(), "/health/ready"],
+    ["health.voiceCoverage", (c) => c.health.voiceCoverage.get(), "/health/voice-coverage"],
+  ];
+
+  it.each(healthCases)("%s.get() sends no query parameters at all", async (_name, invoke, path) => {
+    server.setHandler(envelope({}));
+    await invoke(client);
+    expect(lastUrl()).toBe(path);
+  });
+
   it("uuid values are inserted verbatim: no lower-casing, no encoding", async () => {
     server.setHandler(envelope({}));
     await client.agents.get("ADD6443A-41BD-E414-F6AD-E58D267F4E95");
@@ -96,6 +122,8 @@ describe("service hierarchy", () => {
     expect(Object.isFrozen(client.agents)).toBe(true);
     expect(Object.isFrozen(client.weapons)).toBe(true);
     expect(Object.isFrozen(client.version)).toBe(true);
+    expect(Object.isFrozen(client.health)).toBe(true);
+    expect(client.health.ready).toBe(client.health.ready);
   });
 
   it("sends Accept: application/json and no Content-Type on GET", async () => {

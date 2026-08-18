@@ -304,6 +304,8 @@
         "type": "object"
       },
       "AgentVoiceLine": {
+        "deprecated": true,
+        "description": "Deprecated: always null. Use GET /v1/agents/{uuid}/voicelines instead.",
         "properties": {
           "maxDuration": {
             "format": "float",
@@ -361,6 +363,52 @@
           "id",
           "wave",
           "wwise"
+        ],
+        "type": "object"
+      },
+      "AgentVoicelines": {
+        "properties": {
+          "categories": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/VoiceCategory"
+            },
+            "type": "object"
+          },
+          "events": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/VoiceEvent"
+            },
+            "type": "object"
+          },
+          "info": {
+            "$ref": "#/components/schemas/VoiceInfo"
+          },
+          "media": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/VoiceMedia"
+            },
+            "type": "object"
+          },
+          "subtitles": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/VoiceSubtitle"
+            },
+            "type": "object"
+          },
+          "voiceLines": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/VoiceLine"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "info",
+          "categories",
+          "voiceLines",
+          "events",
+          "media",
+          "subtitles"
         ],
         "type": "object"
       },
@@ -1895,6 +1943,17 @@
         ],
         "type": "object"
       },
+      "Liveness": {
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
       "Locres": {
         "properties": {
           "downloadUrl": {
@@ -2230,6 +2289,43 @@
         ],
         "type": "object"
       },
+      "Readiness": {
+        "properties": {
+          "assetVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "voiceFinalizedAt": {
+            "format": "date-time",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "voiceLanguages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "voiceVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "assetVersion",
+          "voiceVersion",
+          "voiceFinalizedAt",
+          "voiceLanguages"
+        ],
+        "type": "object"
+      },
       "Season": {
         "properties": {
           "assetPath": {
@@ -2459,6 +2555,224 @@
           "displayIcon",
           "displayName",
           "displayNameAllCaps"
+        ],
+        "type": "object"
+      },
+      "VoiceCategory": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "displayName",
+          "sortOrder"
+        ],
+        "type": "object"
+      },
+      "VoiceCoverage": {
+        "properties": {
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/VoiceCoverageAgent"
+            },
+            "type": "array"
+          },
+          "playableAgentCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "unmappedSubjectKeys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "voiceVersion": {
+            "type": "string"
+          },
+          "withVoiceSubjectCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "withoutVoiceSubjectCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "voiceVersion",
+          "playableAgentCount",
+          "withVoiceSubjectCount",
+          "withoutVoiceSubjectCount",
+          "unmappedSubjectKeys",
+          "agents"
+        ],
+        "type": "object"
+      },
+      "VoiceCoverageAgent": {
+        "properties": {
+          "developerName": {
+            "type": "string"
+          },
+          "hasVoiceSubject": {
+            "type": "boolean"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "voiceLineCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "uuid",
+          "developerName",
+          "hasVoiceSubject",
+          "voiceLineCount"
+        ],
+        "type": "object"
+      },
+      "VoiceEvent": {
+        "properties": {
+          "eventName": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "eventName",
+          "name",
+          "sourceIds"
+        ],
+        "type": "object"
+      },
+      "VoiceInfo": {
+        "properties": {
+          "agentUuid": {
+            "type": "string"
+          },
+          "developerName": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "finalizedAt": {
+            "format": "date-time",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "language": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agentUuid",
+          "displayName",
+          "developerName",
+          "version",
+          "language",
+          "finalizedAt"
+        ],
+        "type": "object"
+      },
+      "VoiceLine": {
+        "properties": {
+          "category": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "eventIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "category",
+          "eventIds"
+        ],
+        "type": "object"
+      },
+      "VoiceMedia": {
+        "properties": {
+          "contentHash": {
+            "type": "string"
+          },
+          "contentLength": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "url": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "url",
+          "contentHash",
+          "contentLength"
+        ],
+        "type": "object"
+      },
+      "VoiceSubtitle": {
+        "properties": {
+          "checked": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "status",
+          "checked",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -3163,6 +3477,125 @@
   },
   "openapi": "3.1.1",
   "paths": {
+    "/health/live": {
+      "get": {
+        "operationId": "getLiveness",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Liveness"
+                    },
+                    "status": {
+                      "description": "Mirrors the HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "getReadiness",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Readiness"
+                    },
+                    "status": {
+                      "description": "Mirrors the HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/voice-coverage": {
+      "get": {
+        "operationId": "getVoiceCoverage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/VoiceCoverage"
+                    },
+                    "status": {
+                      "description": "Mirrors the HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
     "/v1/agents": {
       "get": {
         "operationId": "listAgents",
@@ -3320,6 +3753,118 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Agent"
+                    },
+                    "status": {
+                      "description": "Mirrors the HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
+    "/v1/agents/{uuid}/voicelines": {
+      "get": {
+        "operationId": "getAgentVoicelines",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uuid",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Locale for localized fields.",
+            "in": "query",
+            "name": "language",
+            "schema": {
+              "default": "en-US",
+              "enum": [
+                "ar-AE",
+                "de-DE",
+                "en-US",
+                "es-ES",
+                "es-MX",
+                "fr-FR",
+                "id-ID",
+                "it-IT",
+                "ja-JP",
+                "ko-KR",
+                "pl-PL",
+                "pt-BR",
+                "ru-RU",
+                "th-TH",
+                "tr-TR",
+                "vi-VN",
+                "zh-CN",
+                "zh-TW"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AgentVoicelines"
                     },
                     "status": {
                       "description": "Mirrors the HTTP status code.",
@@ -9325,6 +9870,9 @@
     },
     {
       "name": "Weapons"
+    },
+    {
+      "name": "Health"
     }
   ]
 }

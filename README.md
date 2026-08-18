@@ -37,6 +37,14 @@ const competitive = await client.seasons.competitive.list();
 
 // Singletons: get()
 const version = await client.version.get();
+
+// An Agent's voice lines, in one audio language
+const voice = await client.agents.voicelines("707eab51-4836-f488-046a-cda6bf494859", {
+  language: "zh-CN",
+});
+
+// Operational endpoints
+const ready = await client.health.ready.get(); // status: "healthy" | "degraded"
 ```
 
 CommonJS consumers can load the same API with `require`:
@@ -109,6 +117,49 @@ Server codes: `resource_not_found`, `uuid_not_found`, `language_not_found`, `val
 `request_aborted`, `invalid_response`, `http_error` (an HTTP response that is not a ValAsset
 error body, e.g. a proxy or CDN page).
 
+### Voice lines
+
+`client.agents.voicelines(uuid, { language })` returns one Agent's voice lines as top-level
+normalized maps — `voiceLines`, `events`, `media`, `subtitles` and `categories` — rather than a
+deeply nested tree, so an Event or an audio file shared by several lines appears once:
+
+```ts
+const voice = await client.agents.voicelines(agentUuid, { language: "zh-CN" });
+for (const [voiceLineId, line] of Object.entries(voice.voiceLines)) {
+  const events = line.eventIds.map((id) => voice.events[id]);
+  const urls = events.flatMap((e) => e?.sourceIds ?? []).map((id) => voice.media[id]?.url);
+}
+```
+
+The map keys are identities, not field names: VoiceLineId (`vl_` + 32 lowercase hex), EventId as
+unsigned decimal text, and SourceId as **eight uppercase hex digits**. Audio is raw WEM served from
+a CDN — the SDK does not download or decode it.
+
+Three things that commonly surprise:
+
+- `language` selects the **audio** language. Display names come from the Voice Dataset's own
+  catalog and do not change with it.
+- A supported locale the deployed Voice Dataset does not publish yields `language_not_found`
+  (HTTP 404) — distinct from an unsupported locale, which is `validation_failed` (HTTP 400).
+- An Agent with no voice at all resolves with **empty maps and HTTP 200**. That is a normal
+  answer, not an error.
+
+`Agent.voiceLine` (the old single-field shape on the agent DTO) is deprecated and always `null`.
+
+### Health
+
+`client.health` exposes the operational endpoints. `ready` answers HTTP 200 whether or not the
+deployed asset and voice artifacts describe the same game build — read `status` to decide:
+
+```ts
+const ready = await client.health.ready.get();
+if (ready.status !== "healthy") {
+  // "degraded": the two artifacts disagree; ready.assetVersion !== ready.voiceVersion
+}
+
+const coverage = await client.health.voiceCoverage.get(); // per-Agent voice coverage
+```
+
 ### Locres
 
 `client.locres.get({ language })` returns the download manifest for that language's raw
@@ -151,12 +202,13 @@ alias and are re-exported from the package root — no wiring needed.
 
 ### 2. Update the handwritten layer (only when the shape changed)
 
-| Contract change              | What to touch                                                          |
-| ---------------------------- | ---------------------------------------------------------------------- |
-| Fields added/removed/retyped | Nothing — the generated layer covers it                                |
-| New resource route           | Service in `src/client.ts` + the path table in `test/services.test.ts` |
-| New locale                   | Add it to `src/locales.ts`                                             |
-| New server error code        | Nothing — server codes pass through unchanged                          |
+| Contract change              | What to touch                                                            |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| Fields added/removed/retyped | Nothing — the generated layer covers it                                  |
+| New resource route           | Service in `src/client.ts` + the path table in `test/services.test.ts`   |
+| New sub-resource of an item  | `itemSubResource` in `src/client.ts` + a case in `test/services.test.ts` |
+| New locale                   | Add it to `src/locales.ts`                                               |
+| New server error code        | Nothing — server codes pass through unchanged                            |
 
 ### 3. Verify
 

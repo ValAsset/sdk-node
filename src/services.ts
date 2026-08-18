@@ -23,6 +23,15 @@ export interface LocalizedSingletonService<T> {
   get(options?: LocalizedRequestOptions): Promise<T>;
 }
 
+/**
+ * A localized sub-resource addressed by its *parent* item's UUID, e.g. an Agent's voice lines.
+ *
+ * Deliberately a callable rather than another `get(uuid)` service: the UUID here identifies the
+ * parent, not the thing being fetched, and giving it the same `get(uuid)` shape as
+ * {@link CollectionService} would make two different meanings look identical at the call site.
+ */
+export type ItemSubResource<T> = (uuid: string, options?: LocalizedRequestOptions) => Promise<T>;
+
 export function collection<T>(transport: Transport, path: string): CollectionService<T> {
   return Object.freeze({
     list: (options?: LocalizedRequestOptions) => transport.getLocalized<T[]>(path, options),
@@ -35,6 +44,15 @@ export function singleton<T>(transport: Transport, path: string): SingletonServi
   return Object.freeze({
     get: (options?: RequestOptions) => transport.get<T>(path, options),
   });
+}
+
+export function itemSubResource<T>(
+  transport: Transport,
+  collectionPath: string,
+  segment: string,
+): ItemSubResource<T> {
+  return (uuid: string, options?: LocalizedRequestOptions) =>
+    transport.getLocalized<T>(`${collectionPath}/${uuid}/${segment}`, options);
 }
 
 export function localizedSingleton<T>(

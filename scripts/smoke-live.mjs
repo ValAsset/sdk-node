@@ -1,13 +1,19 @@
 // End-to-end smoke against a real, running ValAsset Server using the built SDK (dist/).
 // Not part of the test suite: requires `pnpm build` first and a server with real data.
 //
-// Usage: node scripts/smoke-live.mjs [--base http://localhost:5103]
+// Usage: node scripts/smoke-live.mjs [--base http://localhost:5103] [--language zh-CN]
+//
+// --language matters against a deployment extracted for a single locale: the default en-US would
+// legitimately 404 there, which says nothing about the SDK.
 import { parseArgs } from "node:util";
 import { isValAssetError, ValAssetClient } from "../dist/index.js";
 
-const { values } = parseArgs({ options: { base: { type: "string" } } });
+const { values } = parseArgs({
+  options: { base: { type: "string" }, language: { type: "string" } },
+});
 const baseURL = values.base ?? "http://localhost:5103";
-const client = new ValAssetClient({ baseURL });
+const language = values.language;
+const client = new ValAssetClient({ baseURL, ...(language ? { language } : {}) });
 
 let failures = 0;
 function check(name, condition, extra = "") {
@@ -31,6 +37,44 @@ check(
 const firstUuid = agents[0]?.uuid ?? "";
 const oneAgent = await client.agents.get(firstUuid.toUpperCase());
 check("agents.get is case-insensitive on uuid", oneAgent.uuid === firstUuid);
+
+const voice = await client.agents.voicelines(firstUuid);
+check(
+  "agents.voicelines returns the five normalized maps",
+  ["voiceLines", "events", "media", "subtitles", "categories"].every(
+    (key) => voice[key] !== null && typeof voice[key] === "object",
+  ),
+  `${Object.keys(voice.voiceLines).length} voice lines, ${Object.keys(voice.media).length} media`,
+);
+check(
+  "voicelines media keys are eight uppercase hex digits",
+  Object.keys(voice.media).every((key) => /^[0-9A-F]{8}$/.test(key)),
+);
+check(
+  "voicelines subtitles cover exactly the media keys",
+  Object.keys(voice.subtitles).sort().join() === Object.keys(voice.media).sort().join(),
+);
+check(
+  "voicelines info reports the Voice Dataset's own build",
+  typeof voice.info.version === "string" && voice.info.version.length > 0,
+  voice.info.version,
+);
+
+const ready = await client.health.ready.get();
+check(
+  "health.ready reports a verdict and both versions",
+  ["healthy", "degraded"].includes(ready.status) && typeof ready.voiceVersion === "string",
+  `${ready.status}: asset ${ready.assetVersion ?? "(none)"} vs voice ${ready.voiceVersion}`,
+);
+
+const coverage = await client.health.voiceCoverage.get();
+check(
+  "health.voiceCoverage counts add up",
+  coverage.withVoiceSubjectCount + coverage.withoutVoiceSubjectCount ===
+    coverage.playableAgentCount,
+  `${coverage.withVoiceSubjectCount}/${coverage.playableAgentCount} agents have voice, ` +
+    `${coverage.unmappedSubjectKeys.length} unmapped subject keys`,
+);
 
 const version = await client.version.get();
 check("version.get returns the singleton", typeof version.branch === "string", version.branch);

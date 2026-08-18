@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type {
   Agent,
+  AgentVoicelines,
   ClientVersion,
+  Readiness,
   Contract,
   Locres,
   Map as ValorantMap,
@@ -254,6 +256,55 @@ const weaponFixture: Weapon = {
   skins: [skinFixture],
 };
 
+// The normalized voice-line shape (docs/adr/0004 in the server repo): keys are identities, not
+// field names — VoiceLineId, unsigned-decimal EventId, eight-uppercase-hex SourceId — so this
+// fixture also guards against a serializer that would camelCase dictionary keys.
+const voicelinesFixture: AgentVoicelines = {
+  info: {
+    agentUuid: "707eab51-4836-f488-046a-cda6bf494859",
+    displayName: "Viper",
+    developerName: "Pandemic",
+    version: "13.02.00.5278054",
+    language: "zh-CN",
+    finalizedAt: "2026-08-18T09:53:21.1624888+00:00",
+  },
+  categories: {
+    spike: { displayName: "爆能器", sortOrder: 10 },
+  },
+  voiceLines: {
+    vl_1062e19587385e31b920da0f55cb670d: {
+      name: "E技能:施放",
+      category: null,
+      eventIds: ["697071556"],
+    },
+  },
+  events: {
+    "697071556": {
+      eventName: "Play_VO_Pandemic_AbilityECast",
+      name: "E技能:施放",
+      sourceIds: ["63DFE043"],
+    },
+  },
+  media: {
+    "63DFE043": {
+      url: "https://cdn.example/wem/sha256/2b/a4/2ba4204409b1366785a47ada4ea59366ccc7a9131a56a69845206adc73dd09a5.wem",
+      contentHash: "2ba4204409b1366785a47ada4ea59366ccc7a9131a56a69845206adc73dd09a5",
+      contentLength: 3425,
+    },
+  },
+  subtitles: {
+    "63DFE043": { text: "", status: "unstarted", checked: false, updatedAt: null },
+  },
+};
+
+const readinessFixture: Readiness = {
+  status: "degraded",
+  assetVersion: "13.00.00.4990809",
+  voiceVersion: "13.02.00.5278054",
+  voiceFinalizedAt: "2026-08-18T09:53:21.1624888+00:00",
+  voiceLanguages: ["zh-CN"],
+};
+
 describe("DTO fixtures round-trip through the client untouched", () => {
   let server: StubServer;
   let client: ValAssetClient;
@@ -291,6 +342,22 @@ describe("DTO fixtures round-trip through the client untouched", () => {
     const version = await client.version.get();
     expect(version).toEqual(clientVersionFixture);
     expect(version.buildTime).toBe("2026-06-26T18:12:52");
+  });
+
+  it("agent voice lines keep their identity-shaped map keys verbatim", async () => {
+    server.setHandler(envelope(voicelinesFixture));
+    const result = await client.agents.voicelines(voicelinesFixture.info.agentUuid, {
+      language: "zh-CN",
+    });
+    expect(result).toEqual(voicelinesFixture);
+    // Uppercase hex SourceId survives; a camelCasing key policy would have produced "63dfe043".
+    expect(Object.keys(result.media)).toEqual(["63DFE043"]);
+    expect(Object.keys(result.subtitles)).toEqual(Object.keys(result.media));
+  });
+
+  it("readiness reports both build versions and a degraded verdict over HTTP 200", async () => {
+    server.setHandler(envelope(readinessFixture));
+    await expect(client.health.ready.get()).resolves.toEqual(readinessFixture);
   });
 
   it("locres returns the manifest only — no download helper exists", async () => {
