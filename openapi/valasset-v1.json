@@ -2518,6 +2518,63 @@
         ],
         "type": "object"
       },
+      "SubtitleExportRow": {
+        "properties": {
+          "contentHash": {
+            "type": "string"
+          },
+          "contentLength": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "languageTag": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "contentHash",
+          "contentLength",
+          "languageTag",
+          "text",
+          "status",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "SubtitleWriteRequest": {
+        "properties": {
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "text": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "status"
+        ],
+        "type": "object"
+      },
       "Theme": {
         "properties": {
           "assetPath": {
@@ -2751,6 +2808,12 @@
       },
       "VoiceSubtitle": {
         "properties": {
+          "asrText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "checked": {
             "type": "boolean"
           },
@@ -2772,7 +2835,8 @@
           "text",
           "status",
           "checked",
-          "updatedAt"
+          "updatedAt",
+          "asrText"
         ],
         "type": "object"
       },
@@ -3924,6 +3988,282 @@
         },
         "tags": [
           "Agents"
+        ]
+      }
+    },
+    "/v1/annotations/subtitles": {
+      "get": {
+        "operationId": "listAnnotationSubtitles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/SubtitleExportRow"
+                      },
+                      "type": "array"
+                    },
+                    "status": {
+                      "description": "Mirrors the HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "tags": [
+          "Annotations"
+        ]
+      }
+    },
+    "/v1/annotations/subtitles/{contentHash}/{contentLength}": {
+      "delete": {
+        "operationId": "deleteAnnotationSubtitle",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contentHash",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentLength",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Locale for localized fields.",
+            "in": "query",
+            "name": "language",
+            "schema": {
+              "default": "en-US",
+              "enum": [
+                "ar-AE",
+                "de-DE",
+                "en-US",
+                "es-ES",
+                "es-MX",
+                "fr-FR",
+                "id-ID",
+                "it-IT",
+                "ja-JP",
+                "ko-KR",
+                "pl-PL",
+                "pt-BR",
+                "ru-RU",
+                "th-TH",
+                "tr-TR",
+                "vi-VN",
+                "zh-CN",
+                "zh-TW"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "tags": [
+          "Annotations"
+        ]
+      },
+      "put": {
+        "operationId": "putAnnotationSubtitle",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contentHash",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentLength",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Locale for localized fields.",
+            "in": "query",
+            "name": "language",
+            "schema": {
+              "default": "en-US",
+              "enum": [
+                "ar-AE",
+                "de-DE",
+                "en-US",
+                "es-ES",
+                "es-MX",
+                "fr-FR",
+                "id-ID",
+                "it-IT",
+                "ja-JP",
+                "ko-KR",
+                "pl-PL",
+                "pt-BR",
+                "ru-RU",
+                "th-TH",
+                "tr-TR",
+                "vi-VN",
+                "zh-CN",
+                "zh-TW"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubtitleWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/VoiceSubtitle"
+                    },
+                    "status": {
+                      "description": "Mirrors the HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "tags": [
+          "Annotations"
         ]
       }
     },
@@ -9870,6 +10210,9 @@
     },
     {
       "name": "Weapons"
+    },
+    {
+      "name": "Annotations"
     },
     {
       "name": "Health"
