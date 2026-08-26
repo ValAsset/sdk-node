@@ -135,7 +135,7 @@ The map keys are identities, not field names: VoiceLineId (`vl_` + 32 lowercase 
 unsigned decimal text, and SourceId as **eight uppercase hex digits**. Audio is raw WEM served from
 a CDN — the SDK does not download or decode it.
 
-Three things that commonly surprise:
+Four things that commonly surprise:
 
 - `language` selects the **audio** language. Display names come from the Voice Dataset's own
   catalog and do not change with it.
@@ -143,6 +143,8 @@ Three things that commonly surprise:
   (HTTP 404) — distinct from an unsupported locale, which is `validation_failed` (HTTP 400).
 - An Agent with no voice at all resolves with **empty maps and HTTP 200**. That is a normal
   answer, not an error.
+- `subtitles[sourceId].text` is `null` until a human saves a subtitle. Any non-null value,
+  including an empty string, is authoritative; only fall back to `asrText` when `text` is null.
 
 `Agent.voiceLine` (the old single-field shape on the agent DTO) is deprecated and always `null`.
 

@@ -293,7 +293,7 @@ const voicelinesFixture: AgentVoicelines = {
     },
   },
   subtitles: {
-    "63DFE043": { text: "", status: "unstarted", checked: false, updatedAt: null, asrText: null },
+    "63DFE043": { text: null, updatedAt: null, asrText: null },
   },
 };
 
