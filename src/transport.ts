@@ -37,20 +37,25 @@ export class Transport {
     return this.request<T>(path, undefined, options.signal);
   }
 
-  getLocalized<T>(path: string, options: LocalizedRequestOptions = {}): Promise<T> {
-    return this.request<T>(path, options.language ?? this.defaultLanguage, options.signal);
+  getLocalized<T>(
+    path: string,
+    options: LocalizedRequestOptions = {},
+    query: Readonly<Record<string, boolean>> = {},
+  ): Promise<T> {
+    return this.request<T>(path, options.language ?? this.defaultLanguage, options.signal, query);
   }
 
   private async request<T>(
     path: string,
     language: Locale | undefined,
     signal: AbortSignal | undefined,
+    query: Readonly<Record<string, boolean>> = {},
   ): Promise<T> {
     let httpStatus: number;
     let body: unknown;
     try {
       const response = await this.http.get<unknown>(path, {
-        ...(language === undefined ? {} : { params: { language } }),
+        ...(language === undefined ? {} : { params: { ...query, language } }),
         ...(signal === undefined ? {} : { signal }),
       });
       httpStatus = response.status;

@@ -5,7 +5,7 @@
 //
 // --language matters against a deployment extracted for a single locale: the default en-US would
 // legitimately 404 there, which says nothing about the SDK.
-import { parseArgs } from "node:util";
+import { isDeepStrictEqual, parseArgs } from "node:util";
 import { isValAssetError, ValAssetClient } from "../dist/index.js";
 
 const { values } = parseArgs({
@@ -35,13 +35,31 @@ check(
 );
 
 const firstUuid = agents[0]?.uuid ?? "";
+const playable = await client.agents.list({ includeNonPlayable: false });
+const allCharacters = await client.agents.list({ includeNonPlayable: true });
+check(
+  "default agents list is playable-only",
+  agents.every((agent) => agent.isPlayableCharacter),
+);
+check(
+  "explicit false matches the default roster",
+  isDeepStrictEqual(
+    playable.map((agent) => agent.uuid).sort(),
+    agents.map((agent) => agent.uuid).sort(),
+  ),
+);
+check(
+  "includeNonPlayable contains every playable Agent",
+  agents.every((agent) => allCharacters.some((character) => character.uuid === agent.uuid)),
+  `${agents.length} playable / ${allCharacters.length} total`,
+);
 const oneAgent = await client.agents.get(firstUuid.toUpperCase());
 check("agents.get is case-insensitive on uuid", oneAgent.uuid === firstUuid);
 
 const voice = await client.agents.voicelines(firstUuid);
 check(
-  "agents.voicelines returns the five normalized maps",
-  ["voiceLines", "events", "media", "subtitles", "categories"].every(
+  "agents.voicelines returns the six normalized maps",
+  ["voiceLines", "events", "media", "subtitles", "categories", "dialogues"].every(
     (key) => voice[key] !== null && typeof voice[key] === "object",
   ),
   `${Object.keys(voice.voiceLines).length} voice lines, ${Object.keys(voice.media).length} media`,
@@ -59,11 +77,38 @@ check(
   typeof voice.info.version === "string" && voice.info.version.length > 0,
   voice.info.version,
 );
+check("voicelines includes datasetDigest", /^[a-f0-9]{64}$/.test(voice.info.datasetDigest));
+check(
+  "voice events include sound mappings and dialogue references",
+  Object.values(voice.events).every(
+    (event) =>
+      event.soundSources !== null &&
+      typeof event.soundSources === "object" &&
+      Array.isArray(event.dialogueRefs),
+  ),
+);
+check(
+  "subtitles use nullable text without status/checked",
+  Object.values(voice.subtitles).every(
+    (subtitle) =>
+      (subtitle.text === null || typeof subtitle.text === "string") &&
+      !("status" in subtitle) &&
+      !("checked" in subtitle),
+  ),
+);
+const dialogueResponse = await client.agents.dialogues(firstUuid);
+check(
+  "dialogues matches the voicelines projection",
+  isDeepStrictEqual(dialogueResponse, {
+    info: voice.info,
+    dialogues: voice.dialogues,
+  }),
+);
 
 const ready = await client.health.ready.get();
 check(
-  "health.ready reports a verdict and both versions",
-  ["healthy", "degraded"].includes(ready.status) && typeof ready.voiceVersion === "string",
+  "health.ready reports healthy and both versions",
+  ready.status === "healthy" && typeof ready.voiceVersion === "string",
   `${ready.status}: asset ${ready.assetVersion ?? "(none)"} vs voice ${ready.voiceVersion}`,
 );
 

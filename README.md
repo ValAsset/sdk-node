@@ -27,6 +27,7 @@ const client = new ValAssetClient();
 
 // Collections: list() and get(uuid)
 const agents = await client.agents.list();
+const allCharacters = await client.agents.list({ includeNonPlayable: true });
 const jett = await client.agents.get("add6443a-41bd-e414-f6ad-e58d267f4e95");
 
 // Nested services
@@ -44,7 +45,7 @@ const voice = await client.agents.voicelines("707eab51-4836-f488-046a-cda6bf4948
 });
 
 // Operational endpoints
-const ready = await client.health.ready.get(); // status: "healthy" | "degraded"
+const ready = await client.health.ready.get(); // current Server reports status: "healthy"
 ```
 
 CommonJS consumers can load the same API with `require`:
@@ -112,15 +113,19 @@ try {
 }
 ```
 
-Server codes: `resource_not_found`, `uuid_not_found`, `language_not_found`, `validation_failed`,
+Server codes include `resource_not_found`, `uuid_not_found`, `language_not_found`, `validation_failed`,
 `method_not_allowed`, `internal_error`. SDK codes: `network_error`, `request_timeout`,
 `request_aborted`, `invalid_response`, `http_error` (an HTTP response that is not a ValAsset
 error body, e.g. a proxy or CDN page).
 
 ### Voice lines
 
+`agents.list()` returns playable Agents by default. Set `includeNonPlayable: true` to include
+non-playable characters. This option only applies to the list; UUID lookups and voice/dialogue
+sub-resources still require a playable Agent.
+
 `client.agents.voicelines(uuid, { language })` returns one Agent's voice lines as top-level
-normalized maps — `voiceLines`, `events`, `media`, `subtitles` and `categories` — rather than a
+normalized maps — `voiceLines`, `events`, `media`, `subtitles`, `categories` and `dialogues` — rather than a
 deeply nested tree, so an Event or an audio file shared by several lines appears once:
 
 ```ts
@@ -137,8 +142,9 @@ a CDN — the SDK does not download or decode it.
 
 Four things that commonly surprise:
 
-- `language` selects the **audio** language. Display names come from the Voice Dataset's own
-  catalog and do not change with it.
+- `language` selects the **audio** language. Line, category and event names come from the Voice
+  Dataset's Chinese catalog and do not change with it. `info.displayName` is the Agent's localized
+  name for the requested locale.
 - A supported locale the deployed Voice Dataset does not publish yields `language_not_found`
   (HTTP 404) — distinct from an unsupported locale, which is `validation_failed` (HTTP 400).
 - An Agent with no voice at all resolves with **empty maps and HTTP 200**. That is a normal
@@ -146,19 +152,52 @@ Four things that commonly surprise:
 - `subtitles[sourceId].text` is `null` until a human saves a subtitle. Any non-null value,
   including an empty string, is authoritative; only fall back to `asrText` when `text` is null.
 
+Subtitles keep human text and machine transcription separate. Use `text ?? asrText` for display:
+`text: null` means no human text; an intentionally empty human subtitle must stay empty.
+English uses only `asrText`; its human fields are `text: null` and `updatedAt: null`.
+`status` and `checked` are no longer part of the public subtitle contract.
+
+`asrText` is the active model's transcript for the requested audio language, or `null` when
+unavailable. Shared audio content does not imply shared text across languages. The SDK returns
+both fields unchanged and does not choose display text. Consumers should offer proofreading
+controls and count pending proofreading only when `info.language === "zh-CN"`.
+
 `Agent.voiceLine` (the old single-field shape on the agent DTO) is deprecated and always `null`.
+
+### Dialogues and language alignment
+
+```ts
+const { info, dialogues } = await client.agents.dialogues(agentUuid, { language: "zh-CN" });
+```
+
+This returns the same dialogue projection included in `voicelines`, without the other voice
+maps. Definitions contain participants, related characters, turns, groups, pairing evidence
+and playback metadata. A turn's `owner` and actual `speaker` can differ. Unavailable recordings
+can have null `sourceId` and `media`; their subtitle fields are still present. The SDK passes
+these structures through and does not infer pairing or play audio.
+
+Events expose `soundSources` (decimal SoundNodeId to uppercase-hex SourceId) and `dialogueRefs`
+(including nullable `groupId`). For bilingual views, align by EventId + SoundNodeId, and verify
+that both responses have matching `info.version` and `info.datasetDigest`. SourceId is not a
+cross-language identity. The 18 asset locales do not imply 18 published audio languages; the
+current dataset publishes `zh-CN` and `en-US`.
+
+### Migrating to 0.4
+
+- Update subtitle consumers to nullable `text` and `text ?? asrText`; remove `status`/`checked` use.
+- Update typed voice fixtures with `datasetDigest`, `soundSources`, `dialogueRefs` and `dialogues`.
+- `SubtitleExportRow` and `SubtitleWriteRequest` are no longer exported. Annotations write/export
+  endpoints are internal operator capabilities and excluded from public OpenAPI and this SDK.
 
 ### Health
 
-`client.health` exposes the operational endpoints. `ready` answers HTTP 200 whether or not the
-deployed asset and voice artifacts describe the same game build — read `status` to decide:
+`client.health` exposes the operational endpoints. The current Server's `ready` response is
+HTTP 200 with `status: "healthy"`: the unified database must pass the Voice Dataset startup gates
+before the process can serve requests. An unservable Dataset prevents startup. Readiness does
+not establish ASR coverage, annotations write availability or completed human proofreading.
 
 ```ts
-const ready = await client.health.ready.get();
-if (ready.status !== "healthy") {
-  // "degraded": the two artifacts disagree; ready.assetVersion !== ready.voiceVersion
-}
-
+const ready = await client.health.ready.get(); // status: "healthy"
 const coverage = await client.health.voiceCoverage.get(); // per-Agent voice coverage
 ```
 
@@ -184,14 +223,20 @@ const { downloadUrl } = await client.locres.get({ language: "zh-CN" });
 ## Updating the SDK (maintainers)
 
 Consumers never need this section. The SDK is snapshot-driven: `openapi/valasset-v1.json` is the
-committed contract and everything under `src/generated/` is derived from it. Only two files are
-handwritten against the contract shape (`src/client.ts` service hierarchy, `src/locales.ts`);
-transport, errors and the root exports never change with routine contract updates.
+committed contract and everything under `src/generated/` is derived from it. Routes and options
+also require handwritten service wiring; regenerating types alone does not send new query
+parameters. Review examples and typed fixtures whenever fields or their semantics change.
+
+Maintainer tooling requires Node.js **22.13+** for the pinned pnpm 11 (Node 24 recommended).
+The published package continues to support Node.js 20+.
 
 ### 1. Refresh the snapshot
 
-Run the ValAsset server locally (an empty database is fine — the OpenAPI document does not depend
-on data), then:
+Run the ValAsset server locally with a valid derived database containing a finalized Voice
+Dataset that passes its startup gates. An empty database cannot start the current Server.
+The document itself is independent of dataset contents; the Server's synthetic contract-test
+fixture can also boot the real application and export `/openapi/v1.json` using temporary data.
+For a running local server:
 
 ```bash
 pnpm openapi:update                                             # defaults to http://localhost:5103/openapi/v1.json
@@ -202,11 +247,19 @@ This downloads the document, writes the normalized snapshot and regenerates
 `src/generated/openapi.ts` + `src/generated/aliases.ts`. New DTOs automatically get a public type
 alias and are re-exported from the package root — no wiring needed.
 
+For a document exported to a file by a contract-test fixture, normalize it with
+`normalizeDocument` from `scripts/generate-core.mjs`, save it to `openapi/valasset-v1.json`, then
+run `pnpm openapi:generate`. Review the full document diff in either workflow, including operation
+parameters and responses. Internal annotations endpoints must not appear in the snapshot.
+Localized GET operations retain all 18 locales and the `en-US` default. The SDK exposes GET
+services only.
+
 ### 2. Update the handwritten layer (only when the shape changed)
 
 | Contract change              | What to touch                                                            |
 | ---------------------------- | ------------------------------------------------------------------------ |
-| Fields added/removed/retyped | Nothing — the generated layer covers it                                  |
+| Fields added/removed/retyped | Regenerate types; update fixtures and examples                           |
+| New query parameter          | Options, service wiring and transport query forwarding                   |
 | New resource route           | Service in `src/client.ts` + the path table in `test/services.test.ts`   |
 | New sub-resource of an item  | `itemSubResource` in `src/client.ts` + a case in `test/services.test.ts` |
 | New locale                   | Add it to `src/locales.ts`                                               |
@@ -227,16 +280,30 @@ Optional deeper verification:
 
 ```bash
 node scripts/smoke-live.mjs --base http://localhost:5103   # real server round-trip (run pnpm build first)
-node scripts/smoke-tarball.mjs                             # consumer-perspective tarball install
+pnpm smoke:tarball                                      # consumer-perspective tarball install
 ```
 
 ### 4. Version and publish
 
+Publishing is manual; this repository has no GitHub Actions CI or automatic npm publishing.
+`0.4.0` is already set in `package.json` for this update — do not bump it again before publishing.
+From a clean checkout of the release commit:
+
 ```bash
-npm version minor      # on 0.x, ^0.1.0 only matches 0.1.x, so a minor bump cannot surprise consumers
-npm publish            # prepublishOnly runs the full check chain, including a fresh build
-git push --follow-tags
+pnpm install --frozen-lockfile
+pnpm check
+pnpm smoke:tarball
+npm login              # only if your existing npm session is missing or expired
+npm publish            # prepublishOnly repeats the full checks and builds fresh dist/
+npm view @valasset/sdk version
+git tag -a v0.4.0 -m "Release 0.4.0"
+git push origin v0.4.0
 ```
+
+The package is public via `publishConfig.access`. Publish only after the target Server deploys
+the matching contract; the new dialogues method requires that route. For future 0.x releases,
+use a minor version bump for incompatible contract/type changes, update the migration notes,
+and commit the version before publishing. Do not commit `dist/` or npm tarballs.
 
 ### Drift check against production
 

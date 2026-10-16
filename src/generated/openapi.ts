@@ -79,6 +79,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/agents/{uuid}/dialogues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAgentDialogues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/agents/{uuid}/voicelines": {
         parameters: {
             query?: never;
@@ -996,6 +1012,12 @@ export interface components {
             displayName: null | string;
             slot: string;
         };
+        AgentDialogues: {
+            dialogues: {
+                [key: string]: components["schemas"]["VoiceDialogue"];
+            };
+            info: components["schemas"]["VoiceInfo"];
+        };
         AgentRecruitmentData: {
             counterId: null | string;
             endDate: null | string;
@@ -1033,6 +1055,9 @@ export interface components {
         AgentVoicelines: {
             categories: {
                 [key: string]: components["schemas"]["VoiceCategory"];
+            };
+            dialogues: {
+                [key: string]: components["schemas"]["VoiceDialogue"];
             };
             events: {
                 [key: string]: components["schemas"]["VoiceEvent"];
@@ -1263,6 +1288,77 @@ export interface components {
             largeIcon: null | string;
             rewardPreviewIcon: null | string;
             uuid: string;
+        };
+        DialogueCharacter: {
+            agentUuid: null | string;
+            displayName: string;
+            icon: null | string;
+            subjectKey: string;
+        };
+        DialogueGroup: {
+            evidence: null | components["schemas"]["DialoguePairingEvidence"];
+            id: string;
+            key: string;
+            playback: components["schemas"]["DialoguePlayback"];
+            turns: components["schemas"]["DialogueTurn"][];
+        };
+        DialogueOrigin: {
+            eventId: string;
+            projectId: string;
+            replyEventId: null | string;
+            replySubjectKey: null | string;
+            sequenceNodeId: null | string;
+            startSubjectKey: null | string;
+        };
+        DialoguePairingEvidence: {
+            recordings: components["schemas"]["DialogueRecordingEvidence"][];
+            source: string;
+        };
+        DialoguePlayback: {
+            pairing: string;
+            state: string;
+        };
+        DialogueRecording: {
+            availability: string;
+            media: null | components["schemas"]["VoiceMedia"];
+            soundNodeId: string;
+            sourceId: null | string;
+            subtitle: components["schemas"]["VoiceSubtitle"];
+        };
+        DialogueRecordingEvidence: {
+            /** Format: int32 */
+            playlistIndex: number;
+            playlistNodeId: string;
+            recordingName: string;
+            sourceId: string;
+        };
+        DialogueReference: {
+            dialogueId: string;
+            groupId: null | string;
+            soundNodeIds: string[];
+            /** Format: int32 */
+            turnIndex: number;
+        };
+        DialogueRelatedCharacter: {
+            character: components["schemas"]["DialogueCharacter"];
+            componentPath: string;
+            property: string;
+            relation: string;
+        };
+        DialogueSpeaker: {
+            agentUuid: null | string;
+            displayName: string;
+            icon: null | string;
+            key: string;
+            kind: string;
+        };
+        DialogueTurn: {
+            eventId: string;
+            eventName: string;
+            owner: components["schemas"]["DialogueCharacter"];
+            recordings: components["schemas"]["DialogueRecording"][];
+            role: null | string;
+            speaker: components["schemas"]["DialogueSpeaker"];
         };
         Event: {
             assetPath: string;
@@ -1508,13 +1604,28 @@ export interface components {
             /** Format: int32 */
             voiceLineCount: number;
         };
+        VoiceDialogue: {
+            groups: components["schemas"]["DialogueGroup"][];
+            id: string;
+            kind: string;
+            origin: components["schemas"]["DialogueOrigin"];
+            participants: components["schemas"]["DialogueCharacter"][];
+            playback: components["schemas"]["DialoguePlayback"];
+            relatedCharacters: components["schemas"]["DialogueRelatedCharacter"][];
+            turns: components["schemas"]["DialogueTurn"][];
+        };
         VoiceEvent: {
+            dialogueRefs: components["schemas"]["DialogueReference"][];
             eventName: string;
             name: null | string;
+            soundSources: {
+                [key: string]: string;
+            };
             sourceIds: string[];
         };
         VoiceInfo: {
             agentUuid: string;
+            datasetDigest: string;
             developerName: string;
             displayName: string;
             /** Format: date-time */
@@ -1777,6 +1888,7 @@ export interface operations {
             query?: {
                 /** @description Locale for localized fields. */
                 language?: "ar-AE" | "de-DE" | "en-US" | "es-ES" | "es-MX" | "fr-FR" | "id-ID" | "it-IT" | "ja-JP" | "ko-KR" | "pl-PL" | "pt-BR" | "ru-RU" | "th-TH" | "tr-TR" | "vi-VN" | "zh-CN" | "zh-TW";
+                includeNonPlayable?: boolean;
             };
             header?: never;
             path?: never;
@@ -1857,6 +1969,71 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Agent"];
+                        /** @description Mirrors the HTTP status code. */
+                        status: number;
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Method Not Allowed */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    getAgentDialogues: {
+        parameters: {
+            query?: {
+                /** @description Locale for localized fields. */
+                language?: "ar-AE" | "de-DE" | "en-US" | "es-ES" | "es-MX" | "fr-FR" | "id-ID" | "it-IT" | "ja-JP" | "ko-KR" | "pl-PL" | "pt-BR" | "ru-RU" | "th-TH" | "tr-TR" | "vi-VN" | "zh-CN" | "zh-TW";
+            };
+            header?: never;
+            path: {
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AgentDialogues"];
                         /** @description Mirrors the HTTP status code. */
                         status: number;
                     };

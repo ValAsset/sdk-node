@@ -54,6 +54,7 @@
     "openapi:generate": "node scripts/openapi-generate.mjs",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm pack:check",
     "pack:check": "node scripts/pack-check.mjs",
+    "smoke:tarball": "node scripts/smoke-tarball.mjs",
     "prepublishOnly": "pnpm check"
   },
   "dependencies": {

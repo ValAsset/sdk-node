@@ -212,6 +212,24 @@
         ],
         "type": "object"
       },
+      "AgentDialogues": {
+        "properties": {
+          "dialogues": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/VoiceDialogue"
+            },
+            "type": "object"
+          },
+          "info": {
+            "$ref": "#/components/schemas/VoiceInfo"
+          }
+        },
+        "required": [
+          "info",
+          "dialogues"
+        ],
+        "type": "object"
+      },
       "AgentRecruitmentData": {
         "properties": {
           "counterId": {
@@ -374,6 +392,12 @@
             },
             "type": "object"
           },
+          "dialogues": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/VoiceDialogue"
+            },
+            "type": "object"
+          },
           "events": {
             "additionalProperties": {
               "$ref": "#/components/schemas/VoiceEvent"
@@ -408,7 +432,8 @@
           "voiceLines",
           "events",
           "media",
-          "subtitles"
+          "subtitles",
+          "dialogues"
         ],
         "type": "object"
       },
@@ -1429,6 +1454,332 @@
           "displayIcon",
           "largeIcon",
           "rewardPreviewIcon"
+        ],
+        "type": "object"
+      },
+      "DialogueCharacter": {
+        "properties": {
+          "agentUuid": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subjectKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "subjectKey",
+          "agentUuid",
+          "displayName",
+          "icon"
+        ],
+        "type": "object"
+      },
+      "DialogueGroup": {
+        "properties": {
+          "evidence": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DialoguePairingEvidence"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "playback": {
+            "$ref": "#/components/schemas/DialoguePlayback"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/DialogueTurn"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "playback",
+          "turns",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "DialogueOrigin": {
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "replyEventId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "replySubjectKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sequenceNodeId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startSubjectKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "projectId",
+          "eventId",
+          "sequenceNodeId",
+          "startSubjectKey",
+          "replySubjectKey",
+          "replyEventId"
+        ],
+        "type": "object"
+      },
+      "DialoguePairingEvidence": {
+        "properties": {
+          "recordings": {
+            "items": {
+              "$ref": "#/components/schemas/DialogueRecordingEvidence"
+            },
+            "type": "array"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "recordings"
+        ],
+        "type": "object"
+      },
+      "DialoguePlayback": {
+        "properties": {
+          "pairing": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "pairing"
+        ],
+        "type": "object"
+      },
+      "DialogueRecording": {
+        "properties": {
+          "availability": {
+            "type": "string"
+          },
+          "media": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VoiceMedia"
+              }
+            ]
+          },
+          "soundNodeId": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subtitle": {
+            "$ref": "#/components/schemas/VoiceSubtitle"
+          }
+        },
+        "required": [
+          "soundNodeId",
+          "sourceId",
+          "media",
+          "subtitle",
+          "availability"
+        ],
+        "type": "object"
+      },
+      "DialogueRecordingEvidence": {
+        "properties": {
+          "playlistIndex": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "playlistNodeId": {
+            "type": "string"
+          },
+          "recordingName": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourceId",
+          "recordingName",
+          "playlistNodeId",
+          "playlistIndex"
+        ],
+        "type": "object"
+      },
+      "DialogueReference": {
+        "properties": {
+          "dialogueId": {
+            "type": "string"
+          },
+          "groupId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "soundNodeIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "turnIndex": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dialogueId",
+          "turnIndex",
+          "soundNodeIds",
+          "groupId"
+        ],
+        "type": "object"
+      },
+      "DialogueRelatedCharacter": {
+        "properties": {
+          "character": {
+            "$ref": "#/components/schemas/DialogueCharacter"
+          },
+          "componentPath": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "relation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "character",
+          "relation",
+          "componentPath",
+          "property"
+        ],
+        "type": "object"
+      },
+      "DialogueSpeaker": {
+        "properties": {
+          "agentUuid": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "key",
+          "displayName",
+          "icon",
+          "agentUuid"
+        ],
+        "type": "object"
+      },
+      "DialogueTurn": {
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "eventName": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/DialogueCharacter"
+          },
+          "recordings": {
+            "items": {
+              "$ref": "#/components/schemas/DialogueRecording"
+            },
+            "type": "array"
+          },
+          "role": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "speaker": {
+            "$ref": "#/components/schemas/DialogueSpeaker"
+          }
+        },
+        "required": [
+          "owner",
+          "speaker",
+          "eventId",
+          "eventName",
+          "role",
+          "recordings"
         ],
         "type": "object"
       },
@@ -2638,8 +2989,65 @@
         ],
         "type": "object"
       },
+      "VoiceDialogue": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/DialogueGroup"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/DialogueOrigin"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/DialogueCharacter"
+            },
+            "type": "array"
+          },
+          "playback": {
+            "$ref": "#/components/schemas/DialoguePlayback"
+          },
+          "relatedCharacters": {
+            "items": {
+              "$ref": "#/components/schemas/DialogueRelatedCharacter"
+            },
+            "type": "array"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/DialogueTurn"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "participants",
+          "relatedCharacters",
+          "playback",
+          "origin",
+          "turns",
+          "groups"
+        ],
+        "type": "object"
+      },
       "VoiceEvent": {
         "properties": {
+          "dialogueRefs": {
+            "items": {
+              "$ref": "#/components/schemas/DialogueReference"
+            },
+            "type": "array"
+          },
           "eventName": {
             "type": "string"
           },
@@ -2648,6 +3056,12 @@
               "null",
               "string"
             ]
+          },
+          "soundSources": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
           },
           "sourceIds": {
             "items": {
@@ -2659,13 +3073,18 @@
         "required": [
           "eventName",
           "name",
-          "sourceIds"
+          "sourceIds",
+          "soundSources",
+          "dialogueRefs"
         ],
         "type": "object"
       },
       "VoiceInfo": {
         "properties": {
           "agentUuid": {
+            "type": "string"
+          },
+          "datasetDigest": {
             "type": "string"
           },
           "developerName": {
@@ -2693,6 +3112,7 @@
           "displayName",
           "developerName",
           "version",
+          "datasetDigest",
           "language",
           "finalizedAt"
         ],
@@ -3630,6 +4050,14 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "includeNonPlayable",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -3755,6 +4183,118 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/Agent"
+                    },
+                    "status": {
+                      "description": "Mirrors the HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
+    "/v1/agents/{uuid}/dialogues": {
+      "get": {
+        "operationId": "getAgentDialogues",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uuid",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Locale for localized fields.",
+            "in": "query",
+            "name": "language",
+            "schema": {
+              "default": "en-US",
+              "enum": [
+                "ar-AE",
+                "de-DE",
+                "en-US",
+                "es-ES",
+                "es-MX",
+                "fr-FR",
+                "id-ID",
+                "it-IT",
+                "ja-JP",
+                "ko-KR",
+                "pl-PL",
+                "pt-BR",
+                "ru-RU",
+                "th-TH",
+                "tr-TR",
+                "vi-VN",
+                "zh-CN",
+                "zh-TW"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AgentDialogues"
                     },
                     "status": {
                       "description": "Mirrors the HTTP status code.",

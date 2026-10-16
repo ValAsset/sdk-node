@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { ValAssetClient } from "../src/index.js";
-import { envelope, startStubServer, type StubServer } from "./helpers/stub-server.js";
+import { ValAssetClient, type AgentsListOptions } from "../src/index.js";
+import { envelope, json, startStubServer, type StubServer } from "./helpers/stub-server.js";
 
 describe("service hierarchy", () => {
   let server: StubServer;
@@ -76,18 +76,79 @@ describe("service hierarchy", () => {
     expect(lastUrl()).toBe("/v1/locres?language=ja-JP");
   });
 
-  it("agents.voicelines(uuid) addresses the sub-resource of the parent Agent", async () => {
-    server.setHandler(envelope({}));
-    await client.agents.voicelines("add6443a-41bd-e414-f6ad-e58d267f4e95");
-    expect(lastUrl()).toBe(
-      "/v1/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/voicelines?language=en-US",
-    );
+  it.each([true, false, undefined])(
+    "agents.list sends includeNonPlayable=%s",
+    async (includeNonPlayable) => {
+      const options: AgentsListOptions = {
+        language: "zh-CN",
+        ...(includeNonPlayable === undefined ? {} : { includeNonPlayable }),
+      };
+      await client.agents.list(options);
+      const url = new URL(lastUrl()!, server.baseURL);
+      expect(url.pathname).toBe("/v1/agents");
+      expect(url.searchParams.get("language")).toBe("zh-CN");
+      expect(url.searchParams.get("includeNonPlayable")).toBe(
+        includeNonPlayable === undefined ? null : String(includeNonPlayable),
+      );
+    },
+  );
 
-    // language selects the audio language here, and per-request still beats the client default.
-    await client.agents.voicelines("add6443a-41bd-e414-f6ad-e58d267f4e95", { language: "zh-CN" });
-    expect(lastUrl()).toBe(
-      "/v1/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/voicelines?language=zh-CN",
+  it("agent list options cannot leak to single items or other collections", async () => {
+    const options: AgentsListOptions = { includeNonPlayable: true, language: "zh-CN" };
+    await client.agents.list(options);
+    await client.maps.list(options);
+    expect(lastUrl()).toBe("/v1/maps?language=zh-CN");
+    server.setHandler(envelope({}));
+    await client.agents.get("some-uuid", options);
+    expect(lastUrl()).toBe("/v1/agents/some-uuid?language=zh-CN");
+    await client.agents.dialogues("some-uuid", options);
+    expect(lastUrl()).toBe("/v1/agents/some-uuid/dialogues?language=zh-CN");
+  });
+
+  it.each(["voicelines", "dialogues"] as const)(
+    "agents.%s(uuid) addresses the parent Agent",
+    async (resource) => {
+      server.setHandler(envelope({}));
+      await client.agents[resource]("add6443a-41bd-e414-f6ad-e58d267f4e95");
+      expect(lastUrl()).toBe(
+        `/v1/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/${resource}?language=en-US`,
+      );
+
+      // language selects the audio language here, and per-request still beats the client default.
+      await client.agents[resource]("add6443a-41bd-e414-f6ad-e58d267f4e95", { language: "zh-CN" });
+      expect(lastUrl()).toBe(
+        `/v1/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/${resource}?language=zh-CN`,
+      );
+    },
+  );
+
+  it("dialogues inherits the client locale and maps server errors", async () => {
+    const localized = new ValAssetClient({ baseURL: server.baseURL, language: "zh-CN" });
+    server.setHandler(
+      json(404, {
+        status: 404,
+        code: "uuid_not_found",
+        title: "UUID Not Found",
+        detail: "missing",
+        instance: "/v1/agents/missing/dialogues",
+      }),
     );
+    await expect(localized.agents.dialogues("missing")).rejects.toMatchObject({
+      code: "uuid_not_found",
+      status: 404,
+    });
+    expect(lastUrl()).toBe("/v1/agents/missing/dialogues?language=zh-CN");
+  });
+
+  it.each(["list", "dialogues"] as const)("agents.%s forwards AbortSignal", async (method) => {
+    const controller = new AbortController();
+    server.setHandler(() => controller.abort());
+    const options = { signal: controller.signal, includeNonPlayable: true };
+    const request =
+      method === "list"
+        ? client.agents.list(options)
+        : client.agents.dialogues("some-uuid", options);
+    await expect(request).rejects.toMatchObject({ code: "request_aborted" });
   });
 
   const healthCases: Array<[string, (c: ValAssetClient) => Promise<unknown>, string]> = [

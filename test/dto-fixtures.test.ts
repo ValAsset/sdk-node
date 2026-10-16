@@ -1,7 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type {
   Agent,
+  AgentDialogues,
   AgentVoicelines,
+  DialogueTurn,
+  VoiceDialogue,
   ClientVersion,
   Readiness,
   Contract,
@@ -262,9 +265,10 @@ const weaponFixture: Weapon = {
 const voicelinesFixture: AgentVoicelines = {
   info: {
     agentUuid: "707eab51-4836-f488-046a-cda6bf494859",
-    displayName: "Viper",
+    displayName: "蝰蛇",
     developerName: "Pandemic",
     version: "13.02.00.5278054",
+    datasetDigest: "63de0a06128af726c457cd74a181c3534f367b0def68f4e6b8dff1be5d61b8bc",
     language: "zh-CN",
     finalizedAt: "2026-08-18T09:53:21.1624888+00:00",
   },
@@ -283,11 +287,21 @@ const voicelinesFixture: AgentVoicelines = {
       eventName: "Play_VO_Pandemic_AbilityECast",
       name: "E技能:施放",
       sourceIds: ["63DFE043"],
+      soundSources: { "815551142": "63DFE043" },
+      dialogueRefs: [
+        {
+          dialogueId: "dl_example",
+          turnIndex: 0,
+          soundNodeIds: ["815551142"],
+          groupId: "dg_example",
+        },
+        { dialogueId: "dl_sequence", turnIndex: 1, soundNodeIds: ["815551142"], groupId: null },
+      ],
     },
   },
   media: {
     "63DFE043": {
-      url: "https://cdn.example/wem/sha256/2b/a4/2ba4204409b1366785a47ada4ea59366ccc7a9131a56a69845206adc73dd09a5.wem",
+      url: "https://cdn.example/voice/wem/sha256/2b/a4/2ba4204409b1366785a47ada4ea59366ccc7a9131a56a69845206adc73dd09a5.wem",
       contentHash: "2ba4204409b1366785a47ada4ea59366ccc7a9131a56a69845206adc73dd09a5",
       contentLength: 3425,
     },
@@ -295,11 +309,97 @@ const voicelinesFixture: AgentVoicelines = {
   subtitles: {
     "63DFE043": { text: null, updatedAt: null, asrText: null },
   },
+  dialogues: {},
+};
+
+const dialogueTurn: DialogueTurn = {
+  owner: {
+    subjectKey: "Pandemic",
+    agentUuid: voicelinesFixture.info.agentUuid,
+    displayName: "蝰蛇",
+    icon: null,
+  },
+  speaker: {
+    kind: "character",
+    key: "Wushu",
+    displayName: "Jett",
+    icon: null,
+    agentUuid: agentFixture.uuid,
+  },
+  eventId: "697071556",
+  eventName: "Play_VO_Example",
+  role: null,
+  recordings: [
+    {
+      soundNodeId: "815551142",
+      sourceId: "63DFE043",
+      media: voicelinesFixture.media["63DFE043"]!,
+      subtitle: { text: "", updatedAt: "2026-10-17T00:00:00Z", asrText: "参考" },
+      availability: "available",
+    },
+    {
+      soundNodeId: "823832948",
+      sourceId: null,
+      media: null,
+      subtitle: { text: null, updatedAt: null, asrText: null },
+      availability: "missing",
+    },
+  ],
+};
+
+const dialogueFixture: VoiceDialogue = {
+  id: "dl_example",
+  kind: "sequence",
+  participants: [dialogueTurn.owner],
+  relatedCharacters: [
+    {
+      character: dialogueTurn.owner,
+      relation: "target",
+      componentPath: "/Game/Example",
+      property: "Character",
+    },
+  ],
+  playback: { state: "partial", pairing: "unresolved" },
+  origin: {
+    projectId: "project",
+    eventId: "697071556",
+    sequenceNodeId: "101",
+    startSubjectKey: null,
+    replySubjectKey: null,
+    replyEventId: null,
+  },
+  turns: [dialogueTurn],
+  groups: [
+    {
+      id: "dg_example",
+      key: "01",
+      playback: { state: "partial", pairing: "recording-name" },
+      turns: [dialogueTurn],
+      evidence: {
+        source: "recording-name",
+        recordings: [
+          {
+            sourceId: "63DFE043",
+            recordingName: "Example_01",
+            playlistNodeId: "101",
+            playlistIndex: 0,
+          },
+        ],
+      },
+    },
+    {
+      id: "dg_other",
+      key: "02",
+      playback: { state: "unavailable", pairing: "unresolved" },
+      turns: [],
+      evidence: null,
+    },
+  ],
 };
 
 const readinessFixture: Readiness = {
-  status: "degraded",
-  assetVersion: "13.00.00.4990809",
+  status: "healthy",
+  assetVersion: "13.02.00.5278054",
   voiceVersion: "13.02.00.5278054",
   voiceFinalizedAt: "2026-08-18T09:53:21.1624888+00:00",
   voiceLanguages: ["zh-CN"],
@@ -355,9 +455,85 @@ describe("DTO fixtures round-trip through the client untouched", () => {
     expect(Object.keys(result.subtitles)).toEqual(Object.keys(result.media));
   });
 
-  it("readiness reports both build versions and a degraded verdict over HTTP 200", async () => {
+  it.each([
+    ["zh-CN", "蝰蛇", "已校准字幕"],
+    ["zh-CN", "蝰蛇", ""],
+    ["zh-CN", "蝰蛇", null],
+    ["en-US", "Viper", null],
+  ] as const)(
+    "%s / %s / %j preserves human and ASR fields independently",
+    async (language, displayName, text) => {
+      const fixture: AgentVoicelines = {
+        ...voicelinesFixture,
+        info: { ...voicelinesFixture.info, language, displayName },
+        subtitles: {
+          "63DFE043": {
+            text,
+            updatedAt: text === null ? null : "2026-08-18T12:00:00+00:00",
+            asrText: language === "zh-CN" ? "机器转写参考" : "English ASR reference",
+          },
+        },
+      };
+      server.setHandler(envelope(fixture));
+      const result = await client.agents.voicelines(fixture.info.agentUuid, { language });
+      expect(result).toEqual(fixture);
+      expect(server.requests.at(-1)?.url).toBe(
+        `/v1/agents/${fixture.info.agentUuid}/voicelines?language=${language}`,
+      );
+    },
+  );
+
+  it("keeps lines and events with no source in the requested audio language", async () => {
+    const fixture: AgentVoicelines = {
+      ...voicelinesFixture,
+      events: {
+        "697071556": {
+          eventName: "Play_VO_Pandemic_AbilityECast",
+          name: null,
+          sourceIds: [],
+          soundSources: {},
+          dialogueRefs: [],
+        },
+      },
+      media: {},
+      subtitles: {},
+    };
+    server.setHandler(envelope(fixture));
+    await expect(
+      client.agents.voicelines(fixture.info.agentUuid, { language: "zh-CN" }),
+    ).resolves.toEqual(fixture);
+  });
+
+  it("keeps all six empty maps for an Agent without voice", async () => {
+    const fixture: AgentVoicelines = {
+      info: { ...voicelinesFixture.info, finalizedAt: null },
+      categories: {},
+      voiceLines: {},
+      events: {},
+      media: {},
+      subtitles: {},
+      dialogues: {},
+    };
+    server.setHandler(envelope(fixture));
+    await expect(
+      client.agents.voicelines(fixture.info.agentUuid, { language: "zh-CN" }),
+    ).resolves.toEqual(fixture);
+  });
+
+  it("readiness reports healthy and matching build versions over HTTP 200", async () => {
     server.setHandler(envelope(readinessFixture));
     await expect(client.health.ready.get()).resolves.toEqual(readinessFixture);
+  });
+
+  it("preserves dialogue groups, evidence, distinct speakers and unavailable recordings", async () => {
+    const dialogues = { dl_example: dialogueFixture };
+    const fixture: AgentDialogues = { info: voicelinesFixture.info, dialogues };
+    server.setHandler(envelope(fixture));
+    await expect(client.agents.dialogues(fixture.info.agentUuid)).resolves.toEqual(fixture);
+
+    const full: AgentVoicelines = { ...voicelinesFixture, dialogues };
+    server.setHandler(envelope(full));
+    await expect(client.agents.voicelines(fixture.info.agentUuid)).resolves.toEqual(full);
   });
 
   it("locres returns the manifest only — no download helper exists", async () => {

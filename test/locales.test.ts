@@ -11,12 +11,19 @@ describe("locales", () => {
     expect(locales).toContain("zh-CN");
   });
 
-  it("matches the language enum and default in the OpenAPI snapshot", async () => {
+  it.each([
+    "/v1/agents",
+    "/v1/agents/{uuid}/voicelines",
+    "/v1/agents/{uuid}/dialogues",
+    "/v1/locres",
+  ])("%s keeps the GET language enum and default in the OpenAPI snapshot", async (path) => {
     const document = JSON.parse(await readFile(SNAPSHOT_PATH, "utf8"));
-    const languageParameter = document.paths["/v1/agents"].get.parameters.find(
+    const languageParameter = document.paths[path].get.parameters.find(
       (parameter: { name: string }) => parameter.name === "language",
     );
 
+    expect(languageParameter.in).toBe("query");
+    expect(languageParameter.required).not.toBe(true);
     expect(new Set(languageParameter.schema.enum)).toEqual(new Set(locales));
     expect(languageParameter.schema.default).toBe("en-US");
   });

@@ -32,3 +32,9 @@ export interface LocalizedRequestOptions extends RequestOptions {
   /** Locale for this request only. Wins over the client default, which wins over `"en-US"`. */
   language?: Locale;
 }
+
+/** Options for the Agent collection only; UUID and voice lookups remain playable-only. */
+export interface AgentsListOptions extends LocalizedRequestOptions {
+  /** Include non-playable characters. The server defaults to `false` when omitted. */
+  includeNonPlayable?: boolean;
+}

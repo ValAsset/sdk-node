@@ -1,6 +1,6 @@
 // Packs the real npm tarball and verifies it from a consumer's perspective: installs it into a
-// throwaway Node 20 project, loads its ESM and CommonJS entry points, runs it against a stub HTTP
-// server, and compiles a TypeScript consumer against the published .d.ts. Requires `pnpm build`
+// throwaway project on the invoking Node version, loads its ESM and CommonJS entry points,
+// runs it against a stub HTTP server, and compiles a TypeScript consumer against the published .d.ts. Requires `pnpm build`
 // first and network access for `npm install typescript`.
 import { execSync } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -50,6 +50,7 @@ console.log("CommonJS runtime smoke OK");
     join(workDir, "smoke.mjs"),
     `
 import { createServer } from "node:http";
+import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import { ValAssetClient, ValAssetError, isValAssetError, locales } from "@valasset/sdk";
 
@@ -57,7 +58,9 @@ assert.equal(locales.length, 18);
 assert.equal(typeof ValAssetClient, "function");
 assert.equal(typeof ValAssetError, "function");
 
+const requests = [];
 const server = createServer((req, res) => {
+  requests.push(req.url);
   res.setHeader("content-type", "application/json");
   if (req.url.startsWith("/v1/version")) {
     res.end(JSON.stringify({ status: 200, data: { branch: "b", productVersion: "26",
@@ -70,12 +73,28 @@ const server = createServer((req, res) => {
       detail: "missing", instance: req.url }));
     return;
   }
+  if (req.url.startsWith("/v1/agents/example/dialogues")) {
+    res.end(JSON.stringify({ status: 200, data: { info: { datasetDigest: "digest" }, dialogues: {} } }));
+    return;
+  }
   res.end(JSON.stringify({ status: 200, data: [] }));
 });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const client = new ValAssetClient({ baseURL: \`http://127.0.0.1:\${server.address().port}\` });
 
 assert.deepEqual(await client.agents.list(), []);
+const cjs = createRequire(import.meta.url)("@valasset/sdk");
+for (const consumer of [client, new cjs.ValAssetClient({ baseURL: \`http://127.0.0.1:\${server.address().port}\` })]) {
+  for (const includeNonPlayable of [true, false]) {
+    await consumer.agents.list({ includeNonPlayable, language: "zh-CN" });
+    const url = new URL(requests.at(-1), "http://localhost");
+    assert.equal(url.searchParams.get("includeNonPlayable"), String(includeNonPlayable));
+    assert.equal(url.searchParams.get("language"), "zh-CN");
+  }
+  const response = await consumer.agents.dialogues("example", { language: "en-US" });
+  assert.equal(requests.at(-1), "/v1/agents/example/dialogues?language=en-US");
+  assert.deepEqual(response, { info: { datasetDigest: "digest" }, dialogues: {} });
+}
 assert.equal((await client.version.get()).branch, "b");
 try {
   await client.agents.get("missing");
@@ -93,7 +112,9 @@ console.log("runtime smoke OK");
   await writeFile(
     join(workDir, "smoke-types.ts"),
     `
-import type { Agent, ClientVersion, Locale, Locres, Weapon } from "@valasset/sdk";
+import type { Agent, AgentDialogues, AgentsListOptions, VoiceSubtitle, ClientVersion, Locale, Locres, Weapon } from "@valasset/sdk";
+// @ts-expect-error - annotations are internal operator capabilities
+import type { SubtitleWriteRequest } from "@valasset/sdk";
 import { ValAssetClient, isValAssetError, locales } from "@valasset/sdk";
 
 const language: Locale = "zh-CN";
@@ -101,6 +122,19 @@ const client = new ValAssetClient({ language, timeout: 1000 });
 
 async function usage(): Promise<void> {
   const agents: Agent[] = await client.agents.list({ language: "ja-JP" });
+  const options: AgentsListOptions = { includeNonPlayable: true, language };
+  await client.agents.list(options);
+  const dialogues: AgentDialogues = await client.agents.dialogues("agent", { language });
+  const subtitle: VoiceSubtitle = { text: null, updatedAt: null, asrText: "ASR" };
+  console.log(dialogues.info.datasetDigest, subtitle.text ?? subtitle.asrText);
+  // @ts-expect-error - this option is exclusive to the agents list
+  await client.maps.list({ includeNonPlayable: true });
+  // @ts-expect-error - single-item lookups remain playable-only
+  await client.agents.get("agent", { includeNonPlayable: true });
+  // @ts-expect-error - voice lookups remain playable-only
+  await client.agents.dialogues("agent", { includeNonPlayable: true });
+  // @ts-expect-error - removed public subtitle field
+  console.log(subtitle.status);
   const version: ClientVersion = await client.version.get();
   const locres: Locres = await client.locres.get();
   const weapons: Weapon[] = await client.weapons.list();
@@ -123,11 +157,13 @@ console.log(invalid);
   await writeFile(
     join(workDir, "smoke-types.cts"),
     `
-import { ValAssetClient, type Locale } from "@valasset/sdk";
+import { ValAssetClient, type Locale, type AgentsListOptions, type AgentDialogues } from "@valasset/sdk";
 
 const language: Locale = "zh-CN";
 const client = new ValAssetClient({ language });
-console.log(client);
+const options: AgentsListOptions = { includeNonPlayable: true, language };
+const dialogues: Promise<AgentDialogues> = client.agents.dialogues("agent", options);
+console.log(client.agents.list(options), dialogues);
 `,
   );
   await writeFile(

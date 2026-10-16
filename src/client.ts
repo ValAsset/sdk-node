@@ -1,5 +1,6 @@
 import type {
   Agent,
+  AgentDialogues,
   AgentVoicelines,
   Buddy,
   BuddyLevel,
@@ -33,7 +34,7 @@ import type {
   WeaponSkinChroma,
   WeaponSkinLevel,
 } from "./generated/aliases.js";
-import type { ValAssetClientOptions } from "./options.js";
+import type { AgentsListOptions, ValAssetClientOptions } from "./options.js";
 import {
   collection,
   itemSubResource,
@@ -47,21 +48,29 @@ import {
 import { Transport } from "./transport.js";
 
 interface AgentsService extends CollectionService<Agent> {
+  /** List playable Agents by default; optionally include non-playable characters. */
+  list(options?: AgentsListOptions): Promise<Agent[]>;
+
   /**
    * Voice lines of one Agent, in one audio language.
    *
-   * The `language` option selects the *audio* language; display names come from the Voice
-   * Dataset's own catalog and do not follow it. Rejects with `language_not_found` when the
+   * The `language` option selects the *audio* language; line, category and event names come from
+   * the Dataset's Chinese catalog. `info.displayName` follows the requested Agent locale.
+   * Chinese human subtitles and language-specific `asrText` pass through unchanged; English
+   * has null human subtitle fields and uses ASR text. Rejects with `language_not_found` when the
    * deployed Dataset does not publish the requested locale, and resolves with empty maps when the
    * Agent simply has no voice — that is a normal answer, not an error.
    */
   readonly voicelines: ItemSubResource<AgentVoicelines>;
+
+  /** Dialogue definitions, groups and recordings for one playable Agent and audio language. */
+  readonly dialogues: ItemSubResource<AgentDialogues>;
 }
 
 /**
- * Operational endpoints. `ready` answers 200 whether or not the deployed Asset and Voice artifacts
- * describe the same game build — read `status` (`healthy` / `degraded`) to decide, never the HTTP
- * code.
+ * Operational endpoints. The current Server's `ready` response is HTTP 200 with status `healthy`:
+ * an unservable Voice Dataset fails startup. This does not establish ASR coverage, annotations
+ * write availability or completed human proofreading.
  */
 interface HealthService {
   readonly live: SingletonService<Liveness>;
@@ -133,7 +142,16 @@ export class ValAssetClient {
 
     this.agents = Object.freeze({
       ...collection<Agent>(transport, "/v1/agents"),
+      list: (options: AgentsListOptions = {}) =>
+        transport.getLocalized<Agent[]>(
+          "/v1/agents",
+          options,
+          options.includeNonPlayable === undefined
+            ? {}
+            : { includeNonPlayable: options.includeNonPlayable },
+        ),
       voicelines: itemSubResource<AgentVoicelines>(transport, "/v1/agents", "voicelines"),
+      dialogues: itemSubResource<AgentDialogues>(transport, "/v1/agents", "dialogues"),
     });
     this.buddies = Object.freeze({
       ...collection<Buddy>(transport, "/v1/buddies"),
