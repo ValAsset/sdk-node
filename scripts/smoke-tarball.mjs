@@ -90,6 +90,11 @@ for (const consumer of [client, new cjs.ValAssetClient({ baseURL: \`http://127.0
     const url = new URL(requests.at(-1), "http://localhost");
     assert.equal(url.searchParams.get("includeNonPlayable"), String(includeNonPlayable));
     assert.equal(url.searchParams.get("language"), "zh-CN");
+    await consumer.agents.get("example", { includeNonPlayable, language: "zh-CN" });
+    const itemUrl = new URL(requests.at(-1), "http://localhost");
+    assert.equal(itemUrl.pathname, "/v1/agents/example");
+    assert.equal(itemUrl.searchParams.get("includeNonPlayable"), String(includeNonPlayable));
+    assert.equal(itemUrl.searchParams.get("language"), "zh-CN");
   }
   const response = await consumer.agents.dialogues("example", { language: "en-US" });
   assert.equal(requests.at(-1), "/v1/agents/example/dialogues?language=en-US");
@@ -112,7 +117,7 @@ console.log("runtime smoke OK");
   await writeFile(
     join(workDir, "smoke-types.ts"),
     `
-import type { Agent, AgentDialogues, AgentsListOptions, VoiceSubtitle, ClientVersion, Locale, Locres, Weapon } from "@valasset/sdk";
+import type { Agent, AgentDialogues, AgentsListOptions, AgentsRequestOptions, VoiceSubtitle, ClientVersion, Locale, Locres, Weapon } from "@valasset/sdk";
 // @ts-expect-error - annotations are internal operator capabilities
 import type { SubtitleWriteRequest } from "@valasset/sdk";
 import { ValAssetClient, isValAssetError, locales } from "@valasset/sdk";
@@ -129,8 +134,9 @@ async function usage(): Promise<void> {
   console.log(dialogues.info.datasetDigest, subtitle.text ?? subtitle.asrText);
   // @ts-expect-error - this option is exclusive to the agents list
   await client.maps.list({ includeNonPlayable: true });
-  // @ts-expect-error - single-item lookups remain playable-only
-  await client.agents.get("agent", { includeNonPlayable: true });
+  const itemOptions: AgentsRequestOptions = { includeNonPlayable: true, language };
+  const agent: Agent = await client.agents.get("agent", itemOptions);
+  console.log(agent.uuid);
   // @ts-expect-error - voice lookups remain playable-only
   await client.agents.dialogues("agent", { includeNonPlayable: true });
   // @ts-expect-error - removed public subtitle field
@@ -157,13 +163,16 @@ console.log(invalid);
   await writeFile(
     join(workDir, "smoke-types.cts"),
     `
-import { ValAssetClient, type Locale, type AgentsListOptions, type AgentDialogues } from "@valasset/sdk";
+import { ValAssetClient, type Locale, type AgentsListOptions, type AgentDialogues, type AgentsRequestOptions, type Agent } from "@valasset/sdk";
 
 const language: Locale = "zh-CN";
 const client = new ValAssetClient({ language });
 const options: AgentsListOptions = { includeNonPlayable: true, language };
 const dialogues: Promise<AgentDialogues> = client.agents.dialogues("agent", options);
 console.log(client.agents.list(options), dialogues);
+const itemOptions: AgentsRequestOptions = options;
+const agent: Promise<Agent> = client.agents.get("agent", itemOptions);
+console.log(agent);
 `,
   );
   await writeFile(

@@ -4173,6 +4173,14 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "includeNonPlayable",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {

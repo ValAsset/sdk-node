@@ -121,8 +121,15 @@ error body, e.g. a proxy or CDN page).
 ### Voice lines
 
 `agents.list()` returns playable Agents by default. Set `includeNonPlayable: true` to include
-non-playable characters. This option only applies to the list; UUID lookups and voice/dialogue
-sub-resources still require a playable Agent.
+non-playable characters. Use the same option for details:
+
+```ts
+const character = await client.agents.get(uuid, { includeNonPlayable: true });
+```
+
+Both list and UUID lookups default to playable Agents. Voice/dialogue sub-resources still
+require a playable Agent. `AgentsRequestOptions` covers list and UUID options;
+`AgentsListOptions` remains available for existing consumers.
 
 `client.agents.voicelines(uuid, { language })` returns one Agent's voice lines as top-level
 normalized maps — `voiceLines`, `events`, `media`, `subtitles`, `categories` and `dialogues` — rather than a
@@ -183,6 +190,9 @@ cross-language identity. The 18 asset locales do not imply 18 published audio la
 current dataset publishes `zh-CN` and `en-US`.
 
 ### Migrating to 0.4
+
+`0.4.1` adds `includeNonPlayable` to `agents.get()`. This requires the Server update that exposes
+the parameter on `GET /v1/agents/{uuid}`; older Servers still return 404 for non-playable UUIDs.
 
 - Update subtitle consumers to nullable `text` and `text ?? asrText`; remove `status`/`checked` use.
 - Update typed voice fixtures with `datasetDigest`, `soundSources`, `dialogueRefs` and `dialogues`.
@@ -286,7 +296,7 @@ pnpm smoke:tarball                                      # consumer-perspective t
 ### 4. Version and publish
 
 Publishing is manual; this repository has no GitHub Actions CI or automatic npm publishing.
-`0.4.0` is already set in `package.json` for this update — do not bump it again before publishing.
+`0.4.1` is already set in `package.json` for this update — do not bump it again before publishing.
 From a clean checkout of the release commit:
 
 ```bash
@@ -296,8 +306,8 @@ pnpm smoke:tarball
 npm login              # only if your existing npm session is missing or expired
 npm publish            # prepublishOnly repeats the full checks and builds fresh dist/
 npm view @valasset/sdk version
-git tag -a v0.4.0 -m "Release 0.4.0"
-git push origin v0.4.0
+git tag -a v0.4.1 -m "Release 0.4.1"
+git push origin v0.4.1
 ```
 
 The package is public via `publishConfig.access`. Publish only after the target Server deploys

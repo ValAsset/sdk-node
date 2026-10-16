@@ -53,6 +53,27 @@ check(
   agents.every((agent) => allCharacters.some((character) => character.uuid === agent.uuid)),
   `${agents.length} playable / ${allCharacters.length} total`,
 );
+for (const character of allCharacters.filter((agent) => !agent.isPlayableCharacter)) {
+  const detail = await client.agents.get(character.uuid.toUpperCase(), {
+    includeNonPlayable: true,
+  });
+  check(
+    "non-playable list entries can be fetched by UUID",
+    isDeepStrictEqual(detail, character),
+    character.displayName,
+  );
+  for (const options of [{}, { includeNonPlayable: false }]) {
+    try {
+      await client.agents.get(character.uuid, options);
+      check("non-playable UUID lookup requires opt-in", false);
+    } catch (error) {
+      check(
+        "non-playable UUID lookup requires opt-in",
+        isValAssetError(error) && error.code === "uuid_not_found",
+      );
+    }
+  }
+}
 const oneAgent = await client.agents.get(firstUuid.toUpperCase());
 check("agents.get is case-insensitive on uuid", oneAgent.uuid === firstUuid);
 

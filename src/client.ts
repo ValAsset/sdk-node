@@ -34,7 +34,7 @@ import type {
   WeaponSkinChroma,
   WeaponSkinLevel,
 } from "./generated/aliases.js";
-import type { AgentsListOptions, ValAssetClientOptions } from "./options.js";
+import type { AgentsListOptions, AgentsRequestOptions, ValAssetClientOptions } from "./options.js";
 import {
   collection,
   itemSubResource,
@@ -50,6 +50,9 @@ import { Transport } from "./transport.js";
 interface AgentsService extends CollectionService<Agent> {
   /** List playable Agents by default; optionally include non-playable characters. */
   list(options?: AgentsListOptions): Promise<Agent[]>;
+
+  /** Fetch an Agent by UUID; opt in to non-playable characters with the same option as list. */
+  get(uuid: string, options?: AgentsRequestOptions): Promise<Agent>;
 
   /**
    * Voice lines of one Agent, in one audio language.
@@ -145,6 +148,14 @@ export class ValAssetClient {
       list: (options: AgentsListOptions = {}) =>
         transport.getLocalized<Agent[]>(
           "/v1/agents",
+          options,
+          options.includeNonPlayable === undefined
+            ? {}
+            : { includeNonPlayable: options.includeNonPlayable },
+        ),
+      get: (uuid: string, options: AgentsRequestOptions = {}) =>
+        transport.getLocalized<Agent>(
+          `/v1/agents/${uuid}`,
           options,
           options.includeNonPlayable === undefined
             ? {}

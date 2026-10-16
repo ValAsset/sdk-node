@@ -4,6 +4,7 @@ export { locales } from "./locales.js";
 export type { Locale } from "./locales.js";
 export type {
   AgentsListOptions,
+  AgentsRequestOptions,
   LocalizedRequestOptions,
   RequestOptions,
   ValAssetClientOptions,
