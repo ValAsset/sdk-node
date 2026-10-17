@@ -57,12 +57,10 @@ interface AgentsService extends CollectionService<Agent> {
   /**
    * Voice lines of one Agent, in one audio language.
    *
-   * The `language` option selects the *audio* language; line, category and event names come from
-   * the Dataset's Chinese catalog. `info.displayName` follows the requested Agent locale.
-   * Chinese human subtitles and language-specific `asrText` pass through unchanged; English
-   * has null human subtitle fields and uses ASR text. Rejects with `language_not_found` when the
-   * deployed Dataset does not publish the requested locale, and resolves with empty maps when the
-   * Agent simply has no voice — that is a normal answer, not an error.
+   * The `language` option selects audio; `info.displayName` follows the Agent locale.
+   * Lines provide authoritative `patternKey` plus event relationships. Event category is the
+   * original Wwise category. Human titles, categories and subtitles are owned by Protocol.
+   * Unpublished locales reject with `language_not_found`; Agents without voice return empty maps.
    */
   readonly voicelines: ItemSubResource<AgentVoicelines>;
 

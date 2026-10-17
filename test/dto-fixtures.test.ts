@@ -272,20 +272,16 @@ const voicelinesFixture: AgentVoicelines = {
     language: "zh-CN",
     finalizedAt: "2026-08-18T09:53:21.1624888+00:00",
   },
-  categories: {
-    spike: { displayName: "爆能器", sortOrder: 10 },
-  },
   voiceLines: {
     vl_1062e19587385e31b920da0f55cb670d: {
-      name: "E技能:施放",
-      category: null,
+      patternKey: "AbilityECast",
       eventIds: ["697071556"],
     },
   },
   events: {
     "697071556": {
       eventName: "Play_VO_Pandemic_AbilityECast",
-      name: "E技能:施放",
+      category: "playable-agent-vo",
       sourceIds: ["63DFE043"],
       soundSources: { "815551142": "63DFE043" },
       dialogueRefs: [
@@ -306,9 +302,6 @@ const voicelinesFixture: AgentVoicelines = {
       contentLength: 3425,
     },
   },
-  subtitles: {
-    "63DFE043": { text: null, updatedAt: null, asrText: null },
-  },
   dialogues: {},
 };
 
@@ -316,13 +309,11 @@ const dialogueTurn: DialogueTurn = {
   owner: {
     subjectKey: "Pandemic",
     agentUuid: voicelinesFixture.info.agentUuid,
-    displayName: "蝰蛇",
     icon: null,
   },
   speaker: {
     kind: "character",
     key: "Wushu",
-    displayName: "Jett",
     icon: null,
     agentUuid: agentFixture.uuid,
   },
@@ -334,14 +325,12 @@ const dialogueTurn: DialogueTurn = {
       soundNodeId: "815551142",
       sourceId: "63DFE043",
       media: voicelinesFixture.media["63DFE043"]!,
-      subtitle: { text: "", updatedAt: "2026-10-17T00:00:00Z", asrText: "参考" },
       availability: "available",
     },
     {
       soundNodeId: "823832948",
       sourceId: null,
       media: null,
-      subtitle: { text: null, updatedAt: null, asrText: null },
       availability: "missing",
     },
   ],
@@ -452,27 +441,17 @@ describe("DTO fixtures round-trip through the client untouched", () => {
     expect(result).toEqual(voicelinesFixture);
     // Uppercase hex SourceId survives; a camelCasing key policy would have produced "63dfe043".
     expect(Object.keys(result.media)).toEqual(["63DFE043"]);
-    expect(Object.keys(result.subtitles)).toEqual(Object.keys(result.media));
+    expect(result.voiceLines.vl_1062e19587385e31b920da0f55cb670d?.patternKey).toBe("AbilityECast");
+    expect(result).not.toHaveProperty("subtitles");
+    expect(result).not.toHaveProperty("categories");
   });
 
-  it.each([
-    ["zh-CN", "蝰蛇", "已校准字幕"],
-    ["zh-CN", "蝰蛇", ""],
-    ["zh-CN", "蝰蛇", null],
-    ["en-US", "Viper", null],
-  ] as const)(
-    "%s / %s / %j preserves human and ASR fields independently",
-    async (language, displayName, text) => {
+  it.each(["zh-CN", "en-US"] as const)(
+    "%s selects audio without editorial fields",
+    async (language) => {
       const fixture: AgentVoicelines = {
         ...voicelinesFixture,
-        info: { ...voicelinesFixture.info, language, displayName },
-        subtitles: {
-          "63DFE043": {
-            text,
-            updatedAt: text === null ? null : "2026-08-18T12:00:00+00:00",
-            asrText: language === "zh-CN" ? "机器转写参考" : "English ASR reference",
-          },
-        },
+        info: { ...voicelinesFixture.info, language },
       };
       server.setHandler(envelope(fixture));
       const result = await client.agents.voicelines(fixture.info.agentUuid, { language });
@@ -489,14 +468,13 @@ describe("DTO fixtures round-trip through the client untouched", () => {
       events: {
         "697071556": {
           eventName: "Play_VO_Pandemic_AbilityECast",
-          name: null,
+          category: "playable-agent-vo",
           sourceIds: [],
           soundSources: {},
           dialogueRefs: [],
         },
       },
       media: {},
-      subtitles: {},
     };
     server.setHandler(envelope(fixture));
     await expect(
@@ -504,14 +482,12 @@ describe("DTO fixtures round-trip through the client untouched", () => {
     ).resolves.toEqual(fixture);
   });
 
-  it("keeps all six empty maps for an Agent without voice", async () => {
+  it("keeps all four empty maps for an Agent without voice", async () => {
     const fixture: AgentVoicelines = {
       info: { ...voicelinesFixture.info, finalizedAt: null },
-      categories: {},
       voiceLines: {},
       events: {},
       media: {},
-      subtitles: {},
       dialogues: {},
     };
     server.setHandler(envelope(fixture));

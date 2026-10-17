@@ -1053,9 +1053,6 @@ export interface components {
             wwise: null | string;
         };
         AgentVoicelines: {
-            categories: {
-                [key: string]: components["schemas"]["VoiceCategory"];
-            };
             dialogues: {
                 [key: string]: components["schemas"]["VoiceDialogue"];
             };
@@ -1065,9 +1062,6 @@ export interface components {
             info: components["schemas"]["VoiceInfo"];
             media: {
                 [key: string]: components["schemas"]["VoiceMedia"];
-            };
-            subtitles: {
-                [key: string]: components["schemas"]["VoiceSubtitle"];
             };
             voiceLines: {
                 [key: string]: components["schemas"]["VoiceLine"];
@@ -1291,7 +1285,6 @@ export interface components {
         };
         DialogueCharacter: {
             agentUuid: null | string;
-            displayName: string;
             icon: null | string;
             subjectKey: string;
         };
@@ -1323,7 +1316,6 @@ export interface components {
             media: null | components["schemas"]["VoiceMedia"];
             soundNodeId: string;
             sourceId: null | string;
-            subtitle: components["schemas"]["VoiceSubtitle"];
         };
         DialogueRecordingEvidence: {
             /** Format: int32 */
@@ -1347,7 +1339,6 @@ export interface components {
         };
         DialogueSpeaker: {
             agentUuid: null | string;
-            displayName: string;
             icon: null | string;
             key: string;
             kind: string;
@@ -1581,11 +1572,6 @@ export interface components {
             displayNameAllCaps: null | string;
             uuid: string;
         };
-        VoiceCategory: {
-            displayName: string;
-            /** Format: int32 */
-            sortOrder: number;
-        };
         VoiceCoverage: {
             agents: components["schemas"]["VoiceCoverageAgent"][];
             /** Format: int32 */
@@ -1615,9 +1601,9 @@ export interface components {
             turns: components["schemas"]["DialogueTurn"][];
         };
         VoiceEvent: {
+            category: string;
             dialogueRefs: components["schemas"]["DialogueReference"][];
             eventName: string;
-            name: null | string;
             soundSources: {
                 [key: string]: string;
             };
@@ -1634,21 +1620,14 @@ export interface components {
             version: string;
         };
         VoiceLine: {
-            category: null | string;
             eventIds: string[];
-            name: null | string;
+            patternKey: string;
         };
         VoiceMedia: {
             contentHash: string;
             /** Format: int64 */
             contentLength: number;
             url: null | string;
-        };
-        VoiceSubtitle: {
-            asrText: null | string;
-            text: null | string;
-            /** Format: date-time */
-            updatedAt: null | string;
         };
         Weapon: {
             assetPath: string;

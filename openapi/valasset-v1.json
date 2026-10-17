@@ -386,12 +386,6 @@
       },
       "AgentVoicelines": {
         "properties": {
-          "categories": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/VoiceCategory"
-            },
-            "type": "object"
-          },
           "dialogues": {
             "additionalProperties": {
               "$ref": "#/components/schemas/VoiceDialogue"
@@ -413,12 +407,6 @@
             },
             "type": "object"
           },
-          "subtitles": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/VoiceSubtitle"
-            },
-            "type": "object"
-          },
           "voiceLines": {
             "additionalProperties": {
               "$ref": "#/components/schemas/VoiceLine"
@@ -428,11 +416,9 @@
         },
         "required": [
           "info",
-          "categories",
           "voiceLines",
           "events",
           "media",
-          "subtitles",
           "dialogues"
         ],
         "type": "object"
@@ -1465,9 +1451,6 @@
               "string"
             ]
           },
-          "displayName": {
-            "type": "string"
-          },
           "icon": {
             "type": [
               "null",
@@ -1481,7 +1464,6 @@
         "required": [
           "subjectKey",
           "agentUuid",
-          "displayName",
           "icon"
         ],
         "type": "object"
@@ -1622,16 +1604,12 @@
               "null",
               "string"
             ]
-          },
-          "subtitle": {
-            "$ref": "#/components/schemas/VoiceSubtitle"
           }
         },
         "required": [
           "soundNodeId",
           "sourceId",
           "media",
-          "subtitle",
           "availability"
         ],
         "type": "object"
@@ -1721,9 +1699,6 @@
               "string"
             ]
           },
-          "displayName": {
-            "type": "string"
-          },
           "icon": {
             "type": [
               "null",
@@ -1740,7 +1715,6 @@
         "required": [
           "kind",
           "key",
-          "displayName",
           "icon",
           "agentUuid"
         ],
@@ -2909,22 +2883,6 @@
         ],
         "type": "object"
       },
-      "VoiceCategory": {
-        "properties": {
-          "displayName": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "format": "int32",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "displayName",
-          "sortOrder"
-        ],
-        "type": "object"
-      },
       "VoiceCoverage": {
         "properties": {
           "agents": {
@@ -3042,6 +3000,9 @@
       },
       "VoiceEvent": {
         "properties": {
+          "category": {
+            "type": "string"
+          },
           "dialogueRefs": {
             "items": {
               "$ref": "#/components/schemas/DialogueReference"
@@ -3050,12 +3011,6 @@
           },
           "eventName": {
             "type": "string"
-          },
-          "name": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "soundSources": {
             "additionalProperties": {
@@ -3072,7 +3027,7 @@
         },
         "required": [
           "eventName",
-          "name",
+          "category",
           "sourceIds",
           "soundSources",
           "dialogueRefs"
@@ -3120,28 +3075,18 @@
       },
       "VoiceLine": {
         "properties": {
-          "category": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
           "eventIds": {
             "items": {
               "type": "string"
             },
             "type": "array"
           },
-          "name": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "patternKey": {
+            "type": "string"
           }
         },
         "required": [
-          "name",
-          "category",
+          "patternKey",
           "eventIds"
         ],
         "type": "object"
@@ -3166,35 +3111,6 @@
           "url",
           "contentHash",
           "contentLength"
-        ],
-        "type": "object"
-      },
-      "VoiceSubtitle": {
-        "properties": {
-          "asrText": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "text": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        },
-        "required": [
-          "text",
-          "updatedAt",
-          "asrText"
         ],
         "type": "object"
       },

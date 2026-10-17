@@ -117,8 +117,10 @@ console.log("runtime smoke OK");
   await writeFile(
     join(workDir, "smoke-types.ts"),
     `
-import type { Agent, AgentDialogues, AgentsListOptions, AgentsRequestOptions, VoiceSubtitle, ClientVersion, Locale, Locres, Weapon } from "@valasset/sdk";
-// @ts-expect-error - annotations are internal operator capabilities
+import type { Agent, AgentDialogues, AgentsListOptions, AgentsRequestOptions, ClientVersion, Locale, Locres, Weapon } from "@valasset/sdk";
+// @ts-expect-error - editorial DTOs are owned by Protocol
+import type { VoiceSubtitle } from "@valasset/sdk";
+// @ts-expect-error - annotation writes are not a ValAsset capability
 import type { SubtitleWriteRequest } from "@valasset/sdk";
 import { ValAssetClient, isValAssetError, locales } from "@valasset/sdk";
 
@@ -130,8 +132,8 @@ async function usage(): Promise<void> {
   const options: AgentsListOptions = { includeNonPlayable: true, language };
   await client.agents.list(options);
   const dialogues: AgentDialogues = await client.agents.dialogues("agent", { language });
-  const subtitle: VoiceSubtitle = { text: null, updatedAt: null, asrText: "ASR" };
-  console.log(dialogues.info.datasetDigest, subtitle.text ?? subtitle.asrText);
+  const voice = await client.agents.voicelines("agent", { language });
+  console.log(dialogues.info.datasetDigest, Object.values(voice.voiceLines)[0]?.patternKey);
   // @ts-expect-error - this option is exclusive to the agents list
   await client.maps.list({ includeNonPlayable: true });
   const itemOptions: AgentsRequestOptions = { includeNonPlayable: true, language };
@@ -139,8 +141,8 @@ async function usage(): Promise<void> {
   console.log(agent.uuid);
   // @ts-expect-error - voice lookups remain playable-only
   await client.agents.dialogues("agent", { includeNonPlayable: true });
-  // @ts-expect-error - removed public subtitle field
-  console.log(subtitle.status);
+  // @ts-expect-error - raw facts do not include subtitles
+  console.log(voice.subtitles);
   const version: ClientVersion = await client.version.get();
   const locres: Locres = await client.locres.get();
   const weapons: Weapon[] = await client.weapons.list();

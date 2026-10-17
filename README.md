@@ -132,7 +132,7 @@ require a playable Agent. `AgentsRequestOptions` covers list and UUID options;
 `AgentsListOptions` remains available for existing consumers.
 
 `client.agents.voicelines(uuid, { language })` returns one Agent's voice lines as top-level
-normalized maps — `voiceLines`, `events`, `media`, `subtitles`, `categories` and `dialogues` — rather than a
+normalized maps — `voiceLines`, `events`, `media` and `dialogues` — rather than a
 deeply nested tree, so an Event or an audio file shared by several lines appears once:
 
 ```ts
@@ -147,31 +147,20 @@ The map keys are identities, not field names: VoiceLineId (`vl_` + 32 lowercase 
 unsigned decimal text, and SourceId as **eight uppercase hex digits**. Audio is raw WEM served from
 a CDN — the SDK does not download or decode it.
 
-Four things that commonly surprise:
+The `language` option selects audio. `info.displayName` remains the localized Asset name.
+Each voice line carries an authoritative `patternKey` for translation matching; event `category`
+is the original Wwise category. Voice titles, human categories, subtitles and manually named
+speakers are composed and edited by VALORANT PROTOCOL, outside this raw SDK contract.
 
-- `language` selects the **audio** language. Line, category and event names come from the Voice
-  Dataset's Chinese catalog and do not change with it. `info.displayName` is the Agent's localized
-  name for the requested locale.
-- A supported locale the deployed Voice Dataset does not publish yields `language_not_found`
-  (HTTP 404) — distinct from an unsupported locale, which is `validation_failed` (HTTP 400).
-- An Agent with no voice at all resolves with **empty maps and HTTP 200**. That is a normal
-  answer, not an error.
-- `subtitles[sourceId].text` is `null` until a human saves a subtitle. Any non-null value,
-  including an empty string, is authoritative; only fall back to `asrText` when `text` is null.
+A supported but unpublished audio locale yields `language_not_found` (404); an unsupported
+locale yields `validation_failed` (400). An Agent without voice returns empty maps with 200.
 
-Subtitles keep human text and machine transcription separate. Use `text ?? asrText` for display:
-`text: null` means no human text; an intentionally empty human subtitle must stay empty.
-English uses only `asrText`; its human fields are `text: null` and `updatedAt: null`.
-`status` and `checked` are no longer part of the public subtitle contract.
+**0.5 migration:** removed `VoiceSubtitle`, `VoiceCategory`, `categories`, `subtitles`, voice/event
+human `name`, line human `category`, dialogue `displayName` and recording `subtitle`. Use the VP
+composition API for website presentation. `PatternKey` is not a unique identity; `SemanticKey`
+remains private. Generated types come from the matching raw-only ValAsset Server.
 
-`asrText` is the active model's transcript for the requested audio language, or `null` when
-unavailable. Shared audio content does not imply shared text across languages. The SDK returns
-both fields unchanged and does not choose display text. Consumers should offer proofreading
-controls and count pending proofreading only when `info.language === "zh-CN"`.
-
-`Agent.voiceLine` (the old single-field shape on the agent DTO) is deprecated and always `null`.
-
-### Dialogues and language alignment
+### Dialogues
 
 ```ts
 const { info, dialogues } = await client.agents.dialogues(agentUuid, { language: "zh-CN" });
@@ -180,7 +169,7 @@ const { info, dialogues } = await client.agents.dialogues(agentUuid, { language:
 This returns the same dialogue projection included in `voicelines`, without the other voice
 maps. Definitions contain participants, related characters, turns, groups, pairing evidence
 and playback metadata. A turn's `owner` and actual `speaker` can differ. Unavailable recordings
-can have null `sourceId` and `media`; their subtitle fields are still present. The SDK passes
+can have null `sourceId` and `media`; The SDK passes
 these structures through and does not infer pairing or play audio.
 
 Events expose `soundSources` (decimal SoundNodeId to uppercase-hex SourceId) and `dialogueRefs`
@@ -189,22 +178,11 @@ that both responses have matching `info.version` and `info.datasetDigest`. Sourc
 cross-language identity. The 18 asset locales do not imply 18 published audio languages; the
 current dataset publishes `zh-CN` and `en-US`.
 
-### Migrating to 0.4
-
-`0.4.1` adds `includeNonPlayable` to `agents.get()`. This requires the Server update that exposes
-the parameter on `GET /v1/agents/{uuid}`; older Servers still return 404 for non-playable UUIDs.
-
-- Update subtitle consumers to nullable `text` and `text ?? asrText`; remove `status`/`checked` use.
-- Update typed voice fixtures with `datasetDigest`, `soundSources`, `dialogueRefs` and `dialogues`.
-- `SubtitleExportRow` and `SubtitleWriteRequest` are no longer exported. Annotations write/export
-  endpoints are internal operator capabilities and excluded from public OpenAPI and this SDK.
-
 ### Health
 
 `client.health` exposes the operational endpoints. The current Server's `ready` response is
 HTTP 200 with `status: "healthy"`: the unified database must pass the Voice Dataset startup gates
-before the process can serve requests. An unservable Dataset prevents startup. Readiness does
-not establish ASR coverage, annotations write availability or completed human proofreading.
+before the process can serve requests. An unservable Dataset prevents startup. Readiness proves raw dataset availability; VP owns editorial readiness.
 
 ```ts
 const ready = await client.health.ready.get(); // status: "healthy"
@@ -296,7 +274,7 @@ pnpm smoke:tarball                                      # consumer-perspective t
 ### 4. Version and publish
 
 Publishing is manual; this repository has no GitHub Actions CI or automatic npm publishing.
-`0.4.1` is already set in `package.json` for this update — do not bump it again before publishing.
+`0.5.0` is already set in `package.json` for this update — do not bump it again before publishing.
 From a clean checkout of the release commit:
 
 ```bash
@@ -306,12 +284,12 @@ pnpm smoke:tarball
 npm login              # only if your existing npm session is missing or expired
 npm publish            # prepublishOnly repeats the full checks and builds fresh dist/
 npm view @valasset/sdk version
-git tag -a v0.4.1 -m "Release 0.4.1"
-git push origin v0.4.1
+git tag -a v0.5.0 -m "Release 0.5.0"
+git push origin v0.5.0
 ```
 
 The package is public via `publishConfig.access`. Publish only after the target Server deploys
-the matching contract; the new dialogues method requires that route. For future 0.x releases,
+the matching contract; 0.5 requires the raw voice contract with authoritative patternKey. For future 0.x releases,
 use a minor version bump for incompatible contract/type changes, update the migration notes,
 and commit the version before publishing. Do not commit `dist/` or npm tarballs.
 

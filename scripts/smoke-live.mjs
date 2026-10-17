@@ -79,8 +79,8 @@ check("agents.get is case-insensitive on uuid", oneAgent.uuid === firstUuid);
 
 const voice = await client.agents.voicelines(firstUuid);
 check(
-  "agents.voicelines returns the six normalized maps",
-  ["voiceLines", "events", "media", "subtitles", "categories", "dialogues"].every(
+  "agents.voicelines returns the four raw normalized maps",
+  ["voiceLines", "events", "media", "dialogues"].every(
     (key) => voice[key] !== null && typeof voice[key] === "object",
   ),
   `${Object.keys(voice.voiceLines).length} voice lines, ${Object.keys(voice.media).length} media`,
@@ -90,9 +90,12 @@ check(
   Object.keys(voice.media).every((key) => /^[0-9A-F]{8}$/.test(key)),
 );
 check(
-  "voicelines subtitles cover exactly the media keys",
-  Object.keys(voice.subtitles).sort().join() === Object.keys(voice.media).sort().join(),
+  "voice lines expose authoritative pattern keys",
+  Object.values(voice.voiceLines).every(
+    (line) => typeof line.patternKey === "string" && line.patternKey.length > 0,
+  ),
 );
+check("raw response omits editorial maps", !("subtitles" in voice) && !("categories" in voice));
 check(
   "voicelines info reports the Voice Dataset's own build",
   typeof voice.info.version === "string" && voice.info.version.length > 0,
@@ -106,15 +109,6 @@ check(
       event.soundSources !== null &&
       typeof event.soundSources === "object" &&
       Array.isArray(event.dialogueRefs),
-  ),
-);
-check(
-  "subtitles use nullable text without status/checked",
-  Object.values(voice.subtitles).every(
-    (subtitle) =>
-      (subtitle.text === null || typeof subtitle.text === "string") &&
-      !("status" in subtitle) &&
-      !("checked" in subtitle),
   ),
 );
 const dialogueResponse = await client.agents.dialogues(firstUuid);
